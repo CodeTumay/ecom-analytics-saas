@@ -1,0 +1,19 @@
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /etc/cloudflared/YOUR_TUNNEL_ID.json
+
+ingress:
+  # Keep the Proxmox admin panel on its own hostname.
+  - hostname: proxmox.droopshipping.com.tr
+    service: https://localhost:8006
+    originRequest:
+      noTLSVerify: true
+
+  # SaaS frontend.
+  - hostname: analytics.droopshipping.com.tr
+    service: http://localhost:3000
+
+  # FastAPI backend.
+  - hostname: analytics-api.droopshipping.com.tr
+    service: http://localhost:8000
+
+  - service: http_status:404

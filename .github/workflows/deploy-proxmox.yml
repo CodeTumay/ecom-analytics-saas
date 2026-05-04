@@ -1,0 +1,49 @@
+name: Deploy to Proxmox
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - main
+    types:
+      - completed
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy production stack
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, proxmox, production]
+    env:
+      APP_DIR: ${{ vars.APP_DIR || '/opt/ecom-analytics' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Sync repository to app directory
+        run: |
+          mkdir -p "$APP_DIR"
+          rsync -a --delete \
+            --exclude ".git" \
+            --exclude ".env" \
+            --exclude ".env.production" \
+            --exclude "storage/uploads" \
+            ./ "$APP_DIR"/
+
+      - name: Verify production env exists on server
+        run: |
+          test -f "$APP_DIR/.env.production" || {
+            echo "Missing $APP_DIR/.env.production";
+            exit 1;
+          }
+
+      - name: Build and restart Docker Compose stack
+        run: |
+          cd "$APP_DIR"
+          bash deploy/proxmox-deploy.sh

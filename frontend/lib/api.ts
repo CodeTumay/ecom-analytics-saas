@@ -1,0 +1,127 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export type Totals = {
+  revenue: number;
+  cost: number;
+  commission: number;
+  shipping: number;
+  ads_spend: number;
+  profit: number;
+  margin?: number;
+};
+
+export type ProductRow = {
+  product_name: string;
+  revenue: number;
+  cost: number;
+  commission: number;
+  shipping: number;
+  ads_spend: number;
+  net_profit: number;
+  profit_margin: number;
+};
+
+export type Insight = {
+  severity: "success" | "warning" | "critical";
+  message: string;
+  recommendation: string;
+};
+
+export type Analysis = {
+  totals: Totals;
+  top_profitable_products: ProductRow[];
+  loss_making_products: ProductRow[];
+  revenue_trends: Array<{ period: number; revenue: number; profit: number }>;
+  cost_breakdown: Array<{ name: string; value: number }>;
+  products: ProductRow[];
+  orders: ProductRow[];
+  insights: Insight[];
+};
+
+export type AnalysisResponse = {
+  upload_id: number;
+  status: "queued" | "processing" | "needs_mapping" | "completed" | "failed";
+  mapping?: Record<string, string>;
+  analysis?: Analysis | {
+    columns: string[];
+    missing_required: string[];
+    missing_optional: string[];
+  };
+  error_message?: string;
+};
+
+export type DashboardResponse = {
+  plan: "free" | "pro";
+  usage: { uploads_this_month: number };
+  totals: Totals;
+  recent_uploads: Array<{
+    id: number;
+    filename: string;
+    status: string;
+    created_at: string;
+  }>;
+};
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  token?: string
+): Promise<T> {
+  const headers = new Headers(options.headers);
+  if (!(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers
+  });
+
+  if (!response.ok) {
+    let message = "Request failed";
+    try {
+      const body = await response.json();
+      message = body.detail || message;
+    } catch {
+      message = response.statusText;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export const api = {
+  register: (email: string, password: string) =>
+    request<{ id: number; email: string; plan: string }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, password })
+    }),
+
+  login: (email: string, password: string) =>
+    request<{ access_token: string; token_type: string }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password })
+    }),
+
+  dashboard: (token: string) => request<DashboardResponse>("/dashboard", {}, token),
+
+  upload: (token: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ id: number; status: string }>("/upload", {
+      method: "POST",
+      body: form
+    }, token);
+  },
+
+  analysis: (token: string, uploadId: number) =>
+    request<AnalysisResponse>(`/analysis/${uploadId}`, {}, token),
+
+  saveMapping: (token: string, uploadId: number, mapping: Record<string, string>) =>
+    request<{ id: number; status: string }>(`/analysis/${uploadId}/mapping`, {
+      method: "POST",
+      body: JSON.stringify({ mapping })
+    }, token)
+};
