@@ -15,7 +15,6 @@ import {
   Boxes,
   Calculator,
   CircleDollarSign,
-  ClipboardList,
   CreditCard,
   LineChart,
   LogOut,
@@ -23,12 +22,9 @@ import {
   PackageSearch,
   Percent,
   Receipt,
-  RotateCcw,
   ShoppingCart,
   Truck,
-  UploadCloud,
-  Users,
-  Warehouse
+  UploadCloud
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -70,7 +66,11 @@ const text = {
     sample: "Örnek CSV indir",
     required: "Zorunlu",
     optional: "Opsiyonel",
+    formula: "Formül",
+    logic: "İşlem Mantığı",
     acceptedNames: "Kabul edilen başlık örnekleri",
+    reportDetails: "Rapor Detayları",
+    emptyDetail: "Detay satırı yok",
     products: "Ürünler",
     insights: "AI İçgörüler",
     uploads: "Yüklemeler",
@@ -143,7 +143,11 @@ const text = {
     sample: "Download sample CSV",
     required: "Required",
     optional: "Optional",
+    formula: "Formula",
+    logic: "Processing Logic",
     acceptedNames: "Accepted header examples",
+    reportDetails: "Report Details",
+    emptyDetail: "No detail rows",
     products: "Products",
     insights: "AI Insights",
     uploads: "Uploads",
@@ -201,20 +205,84 @@ function ratio(part = 0, total = 0) {
   return total ? (part / total) * 100 : 0;
 }
 
-function downloadSampleCsv() {
+function sampleValue(key: string, index: number) {
+  if (key.includes("date")) return index === 1 ? "01.01.2026" : "02.01.2026";
+  if (key.includes("period") || key === "month") return index === 1 ? "Ocak 2026" : "Şubat 2026";
+  if (key.includes("product_name")) return index === 1 ? "Test Ürün" : "İkinci Ürün";
+  if (key.includes("campaign")) return index === 1 ? "Google Arama" : "Meta Remarketing";
+  if (key.includes("marketplace")) return index === 1 ? "Trendyol" : "Amazon";
+  if (key.includes("carrier")) return index === 1 ? "MNG" : "Yurtiçi";
+  if (key.includes("risk")) return index === 1 ? "Stok" : "Nakit";
+  if (key.includes("category")) return index === 1 ? "Elektronik" : "Operasyon";
+  if (key.includes("sku")) return index === 1 ? "SKU-001" : "SKU-002";
+  if (key.includes("order")) return index === 1 ? "ORD-001" : "ORD-002";
+  if (key.includes("rate") || key.includes("pct") || key.includes("ratio")) return index === 1 ? "15" : "8";
+  if (key.includes("count") || key.includes("units") || key.includes("click") || key.includes("conversion")) return index === 1 ? "10" : "25";
+  if (key.includes("score")) return index === 1 ? "8" : "4";
+  return index === 1 ? "1000" : "650";
+}
+
+function downloadSampleCsv(report?: ReportDefinition) {
+  const fields = report?.fields?.length
+    ? report.fields
+    : [
+        { key: "product_name" },
+        { key: "revenue" },
+        { key: "cost" },
+        { key: "commission" },
+        { key: "shipping" },
+        { key: "ads_spend" }
+      ];
+  const header = fields.map((field) => field.key).join(";");
   const rows = [
-    "Product;Revenue;Cost;Commission;Shipping;Ads",
-    "Test Product;100;50;10;5;8",
-    "Second Product;200;80;20;12;15",
-    "Bad Product;40;50;5;5;0"
+    header,
+    fields.map((field) => sampleValue(field.key, 1)).join(";"),
+    fields.map((field) => sampleValue(field.key, 2)).join(";")
   ];
   const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "ecommerce-analysis-template.csv";
+  anchor.download = `${report?.id || "ecommerce"}-template.csv`;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function DetailTable({
+  emptyLabel,
+  rows
+}: {
+  emptyLabel: string;
+  rows?: Array<Record<string, string | number>>;
+}) {
+  const columns = rows?.[0] ? Object.keys(rows[0]).slice(0, 12) : [];
+  return (
+    <div className="table-wrap detail-table">
+      <table>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column}>{column}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {(rows || []).slice(0, 50).map((row, index) => (
+            <tr key={`${index}-${columns.join("-")}`}>
+              {columns.map((column) => (
+                <td key={column}>{row[column]}</td>
+              ))}
+            </tr>
+          ))}
+          {!rows?.length ? (
+            <tr>
+              <td className="muted" colSpan={Math.max(columns.length, 1)}>{emptyLabel}</td>
+            </tr>
+          ) : null}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -257,44 +325,38 @@ export default function DashboardPage() {
     return t.processing;
   }, [analysisResponse, t]);
 
-  const reportGroups = [
-    {
-      title: t.financial,
-      items: [
-        { id: "profitability", label: language === "tr" ? "Karlılık" : "Profitability", icon: CircleDollarSign, active: true },
-        { id: "pnl", label: language === "tr" ? "Gelir-Gider" : "P&L", icon: Receipt, active: true },
-        { id: "pricing", label: language === "tr" ? "Fiyatlandırma" : "Pricing", icon: Percent, active: true },
-        { id: "cashflow", label: language === "tr" ? "Nakit Akışı" : "Cash Flow", icon: CreditCard, active: false }
-      ]
-    },
-    {
-      title: t.performance,
-      items: [
-        { id: "sales", label: language === "tr" ? "Satış Performansı" : "Sales Performance", icon: ShoppingCart, active: true },
-        { id: "products", label: language === "tr" ? "Ürün Analizi" : "Product Analysis", icon: PackageSearch, active: true },
-        { id: "marketplace", label: language === "tr" ? "Pazaryeri Analizi" : "Marketplace Analysis", icon: BarChart3, active: false },
-        { id: "trends", label: language === "tr" ? "Trendler" : "Trends", icon: LineChart, active: true }
-      ]
-    },
-    {
-      title: t.operations,
-      items: [
-        { id: "commission", label: language === "tr" ? "Komisyonlar" : "Commissions", icon: Calculator, active: true },
-        { id: "shipping", label: language === "tr" ? "Kargo ve Lojistik" : "Shipping & Logistics", icon: Truck, active: true },
-        { id: "returns", label: language === "tr" ? "İade ve İptal" : "Returns & Cancellations", icon: RotateCcw, active: false },
-        { id: "inventory", label: language === "tr" ? "Stok ve Devir Hızı" : "Inventory Turnover", icon: Warehouse, active: false }
-      ]
-    },
-    {
-      title: t.growth,
-      items: [
-        { id: "ads", label: language === "tr" ? "Reklam ve ROAS" : "Ads & ROAS", icon: Megaphone, active: true },
-        { id: "customers", label: language === "tr" ? "Müşteri Segmentleri" : "Customer Segments", icon: Users, active: false },
-        { id: "risk", label: language === "tr" ? "Risk ve Uyarılar" : "Risk & Alerts", icon: AlertTriangle, active: true },
-        { id: "exports", label: language === "tr" ? "Dışa Aktarım" : "Exports", icon: ClipboardList, active: false }
-      ]
-    }
-  ];
+  const reportIconById = {
+    profitability: CircleDollarSign,
+    income_expense: Receipt,
+    pricing_analysis: Percent,
+    cash_flow: CreditCard,
+    sales_performance: ShoppingCart,
+    product_analysis: PackageSearch,
+    trends: LineChart,
+    commissions: Calculator,
+    shipping_logistics: Truck,
+    ads_performance: Megaphone,
+    risk_alerts: AlertTriangle
+  } as const;
+  const categoryTitles = {
+    financial: t.financial,
+    performance: t.performance,
+    operations: t.operations,
+    growth: t.growth
+  } as const;
+  const reportGroups = (["financial", "performance", "operations", "growth"] as const)
+    .map((category) => ({
+      title: categoryTitles[category],
+      items: reportTypes
+        .filter((report) => report.category === category)
+        .map((report) => ({
+          id: report.id,
+          label: language === "tr" ? report.label_tr : report.label_en,
+          icon: reportIconById[report.id as keyof typeof reportIconById] || BarChart3,
+          active: true
+        }))
+    }))
+    .filter((group) => group.items.length > 0);
 
   const reportCards = [
     {
@@ -451,7 +513,10 @@ export default function DashboardPage() {
                       className={activeReport === item.id ? "active" : ""}
                       key={item.id}
                       type="button"
-                      onClick={() => setActiveReport(item.id)}
+                      onClick={() => {
+                        setActiveReport(item.id);
+                        setSelectedReportType(item.id);
+                      }}
                     >
                       <Icon size={16} />
                       <span>{item.label}</span>
@@ -516,7 +581,10 @@ export default function DashboardPage() {
                 <span>{t.selectReportType}</span>
                 <select
                   value={selectedReportType}
-                  onChange={(event) => setSelectedReportType(event.target.value)}
+                  onChange={(event) => {
+                    setSelectedReportType(event.target.value);
+                    setActiveReport(event.target.value);
+                  }}
                 >
                   {reportTypes.map((report) => (
                     <option key={report.id} value={report.id}>
@@ -548,7 +616,7 @@ export default function DashboardPage() {
                       : t.reportType}
                   </p>
                 </div>
-                <button className="ghost-button" type="button" onClick={downloadSampleCsv}>
+                <button className="ghost-button" type="button" onClick={() => downloadSampleCsv(selectedDefinition)}>
                   <UploadCloud size={17} />
                   {t.sample}
                 </button>
@@ -560,11 +628,24 @@ export default function DashboardPage() {
                       <strong>{field.key}</strong>
                       <span>{language === "tr" ? field.label_tr : field.label_en}</span>
                     </div>
-                    <p>{field.aliases.join(", ")}</p>
+                    <div className="schema-copy">
+                      <p><b>{t.acceptedNames}:</b> {field.aliases.join(", ")}</p>
+                      {(language === "tr" ? field.formula_tr : field.formula_en) ? (
+                        <p><b>{t.formula}:</b> {language === "tr" ? field.formula_tr : field.formula_en}</p>
+                      ) : null}
+                    </div>
                     <em>{field.required ? t.required : t.optional}</em>
                   </div>
                 ))}
               </div>
+              {selectedDefinition ? (
+                <div className="logic-list">
+                  <strong>{t.logic}</strong>
+                  {(language === "tr" ? selectedDefinition.logic_tr : selectedDefinition.logic_en)?.map((item) => (
+                    <span key={item}>{item}</span>
+                  ))}
+                </div>
+              ) : null}
             </section>
 
             {combinedAnalysis ? (
@@ -638,6 +719,14 @@ export default function DashboardPage() {
                 }}
                 products={products}
               />
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <h2>{t.reportDetails}</h2>
+                <span className="status">{analysis?.report_type || selectedReportType}</span>
+              </div>
+              <DetailTable emptyLabel={t.emptyDetail} rows={analysis?.detail_rows} />
             </section>
           </div>
 

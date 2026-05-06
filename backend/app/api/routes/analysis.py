@@ -125,8 +125,17 @@ def combined_report(
         "report_type": "combined",
         "totals": rounded_totals,
         "products": products,
+        "orders": [],
         "top_profitable_products": products[:10],
         "loss_making_products": [row for row in reversed(products) if float(row["net_profit"]) < 0][:10],
+        "revenue_trends": [
+            {
+                "period": str(index + 1),
+                "revenue": round(float((upload.analysis or {}).get("totals", {}).get("revenue", 0) or 0), 2),
+                "profit": round(float((upload.analysis or {}).get("totals", {}).get("profit", 0) or 0), 2),
+            }
+            for index, upload in enumerate(uploads)
+        ],
         "cost_breakdown": [
             {"name": "Product cost", "value": rounded_totals["cost"]},
             {"name": "Commission", "value": rounded_totals["commission"]},
@@ -142,6 +151,19 @@ def combined_report(
             }
             for upload in uploads
         ],
+        "detail_rows": [
+            {
+                "filename": upload.original_filename,
+                "report_type": (upload.mapping or {}).get("__report_type", "profitability"),
+                "revenue": round(float((upload.analysis or {}).get("totals", {}).get("revenue", 0) or 0), 2),
+                "cost": round(float((upload.analysis or {}).get("totals", {}).get("cost", 0) or 0), 2),
+                "profit": round(float((upload.analysis or {}).get("totals", {}).get("profit", 0) or 0), 2),
+                "margin": round(float((upload.analysis or {}).get("totals", {}).get("margin", 0) or 0), 2),
+            }
+            for upload in uploads
+        ],
+        "logic_tr": ["Seçilen tamamlanmış raporlar toplam metriklerde birleştirildi."],
+        "logic_en": ["Selected completed reports were merged into total metrics."],
     }
     combined["insights"] = generate_insights(combined)
     return combined

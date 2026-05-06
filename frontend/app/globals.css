@@ -445,6 +445,16 @@ a {
   margin: 0;
 }
 
+.schema-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.schema-copy b {
+  color: var(--ink);
+}
+
 .schema-row em {
   background: var(--surface-2);
   border-radius: 8px;
@@ -453,6 +463,23 @@ a {
   font-style: normal;
   font-weight: 900;
   padding: 6px 8px;
+}
+
+.logic-list {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+}
+
+.logic-list strong {
+  font-size: 14px;
+}
+
+.logic-list span {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .report-card-grid {
@@ -530,6 +557,10 @@ a {
 
 .table-wrap {
   overflow: auto;
+}
+
+.detail-table table {
+  min-width: 980px;
 }
 
 table {

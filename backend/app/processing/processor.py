@@ -50,12 +50,24 @@ def _read_csv_auto(path: Path) -> pd.DataFrame:
     return max(candidates, key=lambda candidate: candidate[0])[1]
 
 
+def _read_excel_auto(path: Path) -> pd.DataFrame:
+    sheets = pd.read_excel(path, sheet_name=None, dtype=str, keep_default_na=False)
+    candidates = [
+        (_score_dataframe(df), df)
+        for df in sheets.values()
+        if len(df.columns) > 0
+    ]
+    if not candidates:
+        raise ValueError("Could not find a readable sheet in Excel file")
+    return max(candidates, key=lambda candidate: candidate[0])[1]
+
+
 def read_marketplace_file(path: str | Path) -> pd.DataFrame:
     file_path = Path(path)
     if file_path.suffix.lower() == ".csv":
         return _read_csv_auto(file_path)
     if file_path.suffix.lower() == ".xlsx":
-        return pd.read_excel(file_path)
+        return _read_excel_auto(file_path)
     raise ValueError("Unsupported file type")
 
 

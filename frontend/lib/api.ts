@@ -36,7 +36,10 @@ export type Analysis = {
   cost_breakdown: Array<{ name: string; value: number }>;
   products: ProductRow[];
   orders: ProductRow[];
+  detail_rows?: Array<Record<string, string | number>>;
   insights: Insight[];
+  logic_tr?: string[];
+  logic_en?: string[];
   included_reports?: Array<{
     id: number;
     filename: string;
@@ -52,14 +55,19 @@ export type ReportField = {
   required: boolean;
   kind: "text" | "number" | "date" | string;
   aliases: string[];
+  formula_tr?: string;
+  formula_en?: string;
 };
 
 export type ReportDefinition = {
   id: string;
+  category: "financial" | "performance" | "operations" | "growth" | string;
   label_tr: string;
   label_en: string;
   description_tr: string;
   description_en: string;
+  logic_tr?: string[];
+  logic_en?: string[];
   fields: ReportField[];
 };
 
