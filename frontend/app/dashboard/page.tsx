@@ -8,6 +8,7 @@ import { MappingForm } from "@/components/MappingForm";
 import { ProductTable } from "@/components/ProductTable";
 import { StatCard } from "@/components/StatCard";
 import { Analysis, AnalysisResponse, ReportDefinition, api } from "@/lib/api";
+import { DEFAULT_USD_TO_TRY, DisplayCurrency, formatMoney } from "@/lib/currency";
 import { useLanguage } from "@/lib/i18n";
 import {
   AlertTriangle,
@@ -25,6 +26,7 @@ import {
   Megaphone,
   PackageSearch,
   Percent,
+  Printer,
   Radar,
   Receipt,
   Send,
@@ -35,12 +37,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0
-});
 
 const percent = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
@@ -58,6 +54,9 @@ const text = {
     failed: "Başarısız",
     processing: "İşleniyor",
     signOut: "Çıkış yap",
+    exportPdf: "PDF al",
+    currency: "Para birimi",
+    fxRate: "USD/TL kuru",
     uploadsThisMonth: "bu ay yükleme",
     revenue: "Ciro",
     profit: "Net Kar",
@@ -68,6 +67,13 @@ const text = {
     lossProducts: "Zarardaki Ürün",
     averageOrderProfit: "Ortalama Sipariş Karı",
     upload: "Dosya Yükle",
+    trendyolImport: "Trendyol'dan içe aktar",
+    trendyolHelp: "Satıcı ID, API key ve secret ile son siparişleri çekip analize gönder.",
+    sellerId: "Satıcı ID",
+    apiKey: "API key",
+    apiSecret: "API secret",
+    syncDays: "Gün",
+    syncOrders: "Siparişleri çek",
     uploadHelp: "Excel/CSV dosyanı yükle. Sistem ayraç, sayı formatı ve kolonları otomatik algılar.",
     uploadGuide: "Otomatik Analiz İçin Başlıklar",
     sample: "Örnek CSV indir",
@@ -153,6 +159,9 @@ const text = {
     failed: "Failed",
     processing: "Processing",
     signOut: "Sign out",
+    exportPdf: "Export PDF",
+    currency: "Currency",
+    fxRate: "USD/TRY rate",
     uploadsThisMonth: "uploads this month",
     revenue: "Revenue",
     profit: "Net Profit",
@@ -163,6 +172,13 @@ const text = {
     lossProducts: "Loss Products",
     averageOrderProfit: "Avg. Order Profit",
     upload: "Upload File",
+    trendyolImport: "Import from Trendyol",
+    trendyolHelp: "Fetch recent orders with seller ID, API key, and secret, then queue analysis.",
+    sellerId: "Seller ID",
+    apiKey: "API key",
+    apiSecret: "API secret",
+    syncDays: "Days",
+    syncOrders: "Sync orders",
     uploadHelp: "Upload Excel/CSV. The system auto-detects delimiter, number format, and columns.",
     uploadGuide: "Headers for Automated Analysis",
     sample: "Download sample CSV",
@@ -343,6 +359,14 @@ export default function DashboardPage() {
   const [analysisResponse, setAnalysisResponse] = useState<AnalysisResponse>();
   const [combinedAnalysis, setCombinedAnalysis] = useState<Analysis>();
   const [selectedUploadIds, setSelectedUploadIds] = useState<number[]>([]);
+  const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("USD");
+  const [usdToTry, setUsdToTry] = useState(DEFAULT_USD_TO_TRY);
+  const [trendyolForm, setTrendyolForm] = useState({
+    seller_id: "",
+    api_key: "",
+    api_secret: "",
+    days: "7"
+  });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeReport, setActiveReport] = useState("profitability");
@@ -368,6 +392,8 @@ export default function DashboardPage() {
       .filter((integration) => integration.status === "connected")
       .map((integration) => `${integration.category}:${integration.provider}`)
   );
+  const money = (value: number, maximumFractionDigits = 0) =>
+    formatMoney(value, displayCurrency, usdToTry, maximumFractionDigits);
 
   const uploadStatus = useMemo(() => {
     if (!analysisResponse) return "";
@@ -413,7 +439,7 @@ export default function DashboardPage() {
   const reportCards = [
     {
       title: t.costBreakdown,
-      value: money.format(totalCosts),
+      value: money(totalCosts),
       detail: `${t.commissionRatio}: ${percent.format(ratio(totals?.commission, totals?.revenue))}%`
     },
     {
@@ -433,7 +459,7 @@ export default function DashboardPage() {
     },
     {
       title: t.averageOrderProfit,
-      value: money.format(averageOrderProfit),
+      value: money(averageOrderProfit),
       detail: analysis?.orders?.length
         ? language === "tr"
           ? `${analysis.orders.length} sipariş`
@@ -554,9 +580,39 @@ export default function DashboardPage() {
     }
   }
 
+  async function importTrendyolOrders() {
+    if (!token) return;
+    setBusy(true);
+    setError("");
+    try {
+      const days = Math.max(1, Number(trendyolForm.days) || 7);
+      const endDate = Date.now();
+      const startDate = endDate - days * 24 * 60 * 60 * 1000;
+      const upload = await api.importTrendyolOrders(token, {
+        seller_id: trendyolForm.seller_id,
+        api_key: trendyolForm.api_key,
+        api_secret: trendyolForm.api_secret,
+        start_date: startDate,
+        end_date: endDate,
+        size: 200
+      });
+      setCombinedAnalysis(undefined);
+      await pollAnalysis(token, upload.upload_id);
+      await loadDashboard(token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Trendyol sync failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function logout() {
     localStorage.removeItem("token");
     router.push("/login");
+  }
+
+  function exportPdf() {
+    window.print();
   }
 
   return (
@@ -606,7 +662,31 @@ export default function DashboardPage() {
             <p>{combinedAnalysis ? t.generalReport : uploadStatus || t.ready}</p>
           </div>
           <div className="topbar-actions">
+            <div className="toolbar-group" aria-label={t.currency}>
+              <select
+                aria-label={t.currency}
+                value={displayCurrency}
+                onChange={(event) => setDisplayCurrency(event.target.value as DisplayCurrency)}
+              >
+                <option value="USD">USD</option>
+                <option value="TRY">TL</option>
+              </select>
+              {displayCurrency === "TRY" ? (
+                <input
+                  aria-label={t.fxRate}
+                  min="1"
+                  step="0.01"
+                  type="number"
+                  value={usdToTry}
+                  onChange={(event) => setUsdToTry(Number(event.target.value) || DEFAULT_USD_TO_TRY)}
+                />
+              ) : null}
+            </div>
             <LanguageToggle language={language} onChange={setLanguage} />
+            <button className="ghost-button" type="button" onClick={exportPdf}>
+              <Printer size={17} />
+              {t.exportPdf}
+            </button>
             <button className="ghost-button" type="button" onClick={logout}>
               <LogOut size={17} />
               {t.signOut}
@@ -617,11 +697,11 @@ export default function DashboardPage() {
         {error ? <div className="alert critical"><strong>{error}</strong></div> : null}
 
         <div className="grid stats extended-stats">
-          <StatCard label={t.revenue} value={money.format(totals?.revenue || 0)} />
-          <StatCard label={t.profit} value={money.format(totals?.profit || 0)} negative={(totals?.profit || 0) < 0} />
-          <StatCard label={t.adsSpend} value={money.format(totals?.ads_spend || 0)} />
+          <StatCard label={t.revenue} value={money(totals?.revenue || 0)} />
+          <StatCard label={t.profit} value={money(totals?.profit || 0)} negative={(totals?.profit || 0) < 0} />
+          <StatCard label={t.adsSpend} value={money(totals?.ads_spend || 0)} />
           <StatCard label={t.margin} value={`${analysis?.totals.margin ?? 0}%`} negative={(analysis?.totals.margin || 0) < 0} />
-          <StatCard label={t.totalCosts} value={money.format(totalCosts)} />
+          <StatCard label={t.totalCosts} value={money(totalCosts)} />
           <StatCard label={t.lossProducts} value={String(lossProducts)} negative={lossProducts > 0} />
         </div>
 
@@ -668,6 +748,67 @@ export default function DashboardPage() {
                 }}
                 onFile={uploadFile}
               />
+              <div className="integration-form">
+                <div>
+                  <h3>{t.trendyolImport}</h3>
+                  <p>{t.trendyolHelp}</p>
+                </div>
+                <div className="integration-fields">
+                  <label>
+                    <span>{t.sellerId}</span>
+                    <input
+                      value={trendyolForm.seller_id}
+                      onChange={(event) =>
+                        setTrendyolForm((current) => ({ ...current, seller_id: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{t.apiKey}</span>
+                    <input
+                      value={trendyolForm.api_key}
+                      onChange={(event) =>
+                        setTrendyolForm((current) => ({ ...current, api_key: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{t.apiSecret}</span>
+                    <input
+                      type="password"
+                      value={trendyolForm.api_secret}
+                      onChange={(event) =>
+                        setTrendyolForm((current) => ({ ...current, api_secret: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>{t.syncDays}</span>
+                    <input
+                      min="1"
+                      type="number"
+                      value={trendyolForm.days}
+                      onChange={(event) =>
+                        setTrendyolForm((current) => ({ ...current, days: event.target.value }))
+                      }
+                    />
+                  </label>
+                </div>
+                <button
+                  className="primary-button"
+                  disabled={
+                    busy ||
+                    !trendyolForm.seller_id ||
+                    !trendyolForm.api_key ||
+                    !trendyolForm.api_secret
+                  }
+                  type="button"
+                  onClick={importTrendyolOrders}
+                >
+                  <Truck size={17} />
+                  {t.syncOrders}
+                </button>
+              </div>
             </section>
 
             <section className="panel">
@@ -732,7 +873,7 @@ export default function DashboardPage() {
                     <div className="included-report" key={report.id}>
                       <strong>{report.filename}</strong>
                       <span>{report.report_type}</span>
-                      <em>{money.format(report.totals?.profit || 0)}</em>
+                      <em>{money(report.totals?.profit || 0)}</em>
                     </div>
                   ))}
                 </div>
@@ -797,6 +938,7 @@ export default function DashboardPage() {
 
             <Charts
               analysis={analysis}
+              formatMoney={money}
               labels={{
                 revenueProfit: language === "tr" ? "Ciro ve Kar" : "Revenue and Profit",
                 costBreakdown: t.costBreakdown
@@ -808,6 +950,7 @@ export default function DashboardPage() {
                 <h2>{t.products}</h2>
               </div>
               <ProductTable
+                formatMoney={money}
                 labels={{
                   product: language === "tr" ? "Ürün" : "Product",
                   revenue: t.revenue,
@@ -869,15 +1012,15 @@ export default function DashboardPage() {
                 <Brain size={18} />
               </div>
               <div className="forecast-grid">
-                <StatCard label={t.forecast30} value={money.format(planningSummary?.sales_forecast.next_30_days || 0)} />
-                <StatCard label={t.forecast60} value={money.format(planningSummary?.sales_forecast.next_60_days || 0)} />
-                <StatCard label={t.forecast90} value={money.format(planningSummary?.sales_forecast.next_90_days || 0)} />
+                <StatCard label={t.forecast30} value={money(planningSummary?.sales_forecast.next_30_days || 0)} />
+                <StatCard label={t.forecast60} value={money(planningSummary?.sales_forecast.next_60_days || 0)} />
+                <StatCard label={t.forecast90} value={money(planningSummary?.sales_forecast.next_90_days || 0)} />
               </div>
               <div className="scenario-list">
                 {(planningSummary?.scenarios || []).map((scenario) => (
                   <div className="scenario-item" key={scenario.id}>
                     <strong>{scenario.id}</strong>
-                    <span>{money.format(scenario.profit)} / {scenario.margin}%</span>
+                    <span>{money(scenario.profit)} / {scenario.margin}%</span>
                   </div>
                 ))}
               </div>

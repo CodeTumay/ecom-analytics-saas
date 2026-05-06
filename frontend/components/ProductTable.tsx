@@ -1,15 +1,11 @@
 import type { ProductRow } from "@/lib/api";
 
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0
-});
-
 export function ProductTable({
+  formatMoney,
   labels,
   products
 }: {
+  formatMoney?: (value: number) => string;
   labels?: {
     product: string;
     revenue: string;
@@ -23,6 +19,8 @@ export function ProductTable({
   };
   products: ProductRow[];
 }) {
+  const money = formatMoney || ((value: number) => `$${Math.round(value).toLocaleString("en-US")}`);
+
   return (
     <div className="table-wrap">
       <table>
@@ -42,13 +40,13 @@ export function ProductTable({
           {products.map((product) => (
             <tr key={product.product_name}>
               <td>{product.product_name}</td>
-              <td>{money.format(product.revenue)}</td>
-              <td>{money.format(product.cost)}</td>
-              <td>{money.format(product.commission)}</td>
-              <td>{money.format(product.shipping)}</td>
-              <td>{money.format(product.ads_spend)}</td>
+              <td>{money(product.revenue)}</td>
+              <td>{money(product.cost)}</td>
+              <td>{money(product.commission)}</td>
+              <td>{money(product.shipping)}</td>
+              <td>{money(product.ads_spend)}</td>
               <td className={product.net_profit >= 0 ? "money-positive" : "money-negative"}>
-                {money.format(product.net_profit)}
+                {money(product.net_profit)}
               </td>
               <td>{product.profit_margin.toFixed(1)}%</td>
             </tr>

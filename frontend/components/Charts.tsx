@@ -18,9 +18,11 @@ const COLORS = ["#227c5c", "#c97b3a", "#5d7a99", "#9b4a4a"];
 
 export function Charts({
   analysis,
+  formatMoney,
   labels
 }: {
   analysis?: Analysis;
+  formatMoney?: (value: number) => string;
   labels?: {
     revenueProfit: string;
     costBreakdown: string;
@@ -38,7 +40,7 @@ export function Charts({
               <CartesianGrid strokeDasharray="3 3" stroke="#d9e1dd" />
               <XAxis dataKey="period" tickLine={false} axisLine={false} />
               <YAxis tickLine={false} axisLine={false} />
-              <Tooltip />
+              <Tooltip formatter={(value) => formatMoney ? formatMoney(Number(value)) : value} />
               <Bar dataKey="revenue" fill="#227c5c" radius={[5, 5, 0, 0]} />
               <Bar dataKey="profit" fill="#c97b3a" radius={[5, 5, 0, 0]} />
             </BarChart>
@@ -64,7 +66,7 @@ export function Charts({
                   <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(value) => formatMoney ? formatMoney(Number(value)) : value} />
             </PieChart>
           </ResponsiveContainer>
         </div>

@@ -5,8 +5,18 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.db.session import get_db
-from app.models import CompetitorWatch, Integration, NotificationRule, Product, ScheduledReport, Upload, User
+from app.models import (
+    CompetitorWatch,
+    Integration,
+    NotificationRule,
+    Product,
+    ScheduledReport,
+    Upload,
+    UploadStatus,
+    User,
+)
 from app.schemas.platform import (
     CompetitorWatchCreate,
     CompetitorWatchOut,
@@ -16,8 +26,18 @@ from app.schemas.platform import (
     NotificationRuleOut,
     ScheduledReportCreate,
     ScheduledReportOut,
+    TrendyolOrderImportOut,
+    TrendyolOrderImportRequest,
 )
 from app.services.platform_catalog import platform_catalog
+from app.services.trendyol import (
+    TrendyolApiError,
+    TrendyolCredentials,
+    fetch_shipment_packages,
+    packages_to_profitability_rows,
+    write_profitability_csv,
+)
+from app.worker.tasks import process_upload
 
 router = APIRouter()
 
@@ -136,6 +156,59 @@ def sync_integration(
         "datasets": _datasets_for_category(integration.category),
         "message": "Real provider adapter is ready to be wired with API credentials.",
     }
+
+
+@router.post("/integrations/trendyol/import-orders", response_model=TrendyolOrderImportOut)
+def import_trendyol_orders(
+    payload: TrendyolOrderImportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TrendyolOrderImportOut:
+    try:
+        response = fetch_shipment_packages(
+            TrendyolCredentials(
+                seller_id=payload.seller_id,
+                api_key=payload.api_key,
+                api_secret=payload.api_secret,
+            ),
+            start_date=payload.start_date,
+            end_date=payload.end_date,
+            page=payload.page,
+            size=payload.size,
+            status=payload.status,
+        )
+    except TrendyolApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    rows = packages_to_profitability_rows(response)
+    if not rows:
+        raise HTTPException(
+            status_code=400,
+            detail="Trendyol returned no order lines for this filter",
+        )
+
+    timestamp = int(datetime.now(timezone.utc).timestamp())
+    filename = f"trendyol-orders-user-{current_user.id}-{timestamp}.csv"
+    file_path = settings.storage_dir / filename
+    write_profitability_csv(rows, file_path)
+
+    upload = Upload(
+        user_id=current_user.id,
+        file_path=str(file_path),
+        original_filename=filename,
+        status=UploadStatus.QUEUED,
+        mapping={"__report_type": "profitability"},
+    )
+    db.add(upload)
+    db.commit()
+    db.refresh(upload)
+    process_upload.delay(upload.id, upload.mapping, "profitability")
+
+    return TrendyolOrderImportOut(
+        upload_id=upload.id,
+        status=upload.status,
+        imported_rows=len(rows),
+        message="Trendyol orders queued for profitability analysis",
+    )
 
 
 @router.get("/notification-rules", response_model=list[NotificationRuleOut])
