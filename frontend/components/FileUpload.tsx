@@ -5,9 +5,15 @@ import { ChangeEvent, useRef, useState } from "react";
 
 export function FileUpload({
   disabled,
+  labels,
   onFile
 }: {
   disabled?: boolean;
+  labels?: {
+    title: string;
+    subtitle: string;
+    button: string;
+  };
   onFile: (file: File) => Promise<void>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,8 +30,8 @@ export function FileUpload({
   return (
     <div className="upload-box">
       <div className="upload-copy">
-        <strong>{fileName || "Marketplace export"}</strong>
-        <span>CSV or Excel</span>
+        <strong>{fileName || labels?.title || "Marketplace export"}</strong>
+        <span>{labels?.subtitle || "CSV or Excel"}</span>
       </div>
       <input
         className="hidden-file"
@@ -41,7 +47,7 @@ export function FileUpload({
         onClick={() => inputRef.current?.click()}
       >
         <Upload size={17} />
-        Upload
+        {labels?.button || "Upload"}
       </button>
     </div>
   );

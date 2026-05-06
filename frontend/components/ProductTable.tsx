@@ -6,20 +6,36 @@ const money = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0
 });
 
-export function ProductTable({ products }: { products: ProductRow[] }) {
+export function ProductTable({
+  labels,
+  products
+}: {
+  labels?: {
+    product: string;
+    revenue: string;
+    cost: string;
+    commission: string;
+    shipping: string;
+    ads: string;
+    profit: string;
+    margin: string;
+    empty: string;
+  };
+  products: ProductRow[];
+}) {
   return (
     <div className="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Product</th>
-            <th>Revenue</th>
-            <th>Cost</th>
-            <th>Commission</th>
-            <th>Shipping</th>
-            <th>Ads</th>
-            <th>Profit</th>
-            <th>Margin</th>
+            <th>{labels?.product || "Product"}</th>
+            <th>{labels?.revenue || "Revenue"}</th>
+            <th>{labels?.cost || "Cost"}</th>
+            <th>{labels?.commission || "Commission"}</th>
+            <th>{labels?.shipping || "Shipping"}</th>
+            <th>{labels?.ads || "Ads"}</th>
+            <th>{labels?.profit || "Profit"}</th>
+            <th>{labels?.margin || "Margin"}</th>
           </tr>
         </thead>
         <tbody>
@@ -39,7 +55,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
           ))}
           {products.length === 0 ? (
             <tr>
-              <td colSpan={8} className="muted">No products yet</td>
+              <td colSpan={8} className="muted">{labels?.empty || "No products yet"}</td>
             </tr>
           ) : null}
         </tbody>

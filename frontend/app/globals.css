@@ -78,6 +78,12 @@ a {
   margin-top: 24px;
 }
 
+.auth-language {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 18px;
+}
+
 .field {
   display: grid;
   gap: 7px;
@@ -137,7 +143,7 @@ a {
 .app-shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 248px 1fr;
+  grid-template-columns: 304px 1fr;
 }
 
 .sidebar {
@@ -179,8 +185,58 @@ a {
   padding: 10px 12px;
 }
 
-.nav a.active {
+.nav button {
+  align-items: center;
+  background: transparent;
+  border-radius: 8px;
+  color: #dbe7e3;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  min-height: 38px;
+  padding: 9px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.nav a.active,
+.nav button.active {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.report-sidebar {
+  overflow-y: auto;
+}
+
+.report-nav {
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.nav-group {
+  display: grid;
+  gap: 5px;
+}
+
+.nav-group-title {
+  color: #8fa79e;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  padding: 0 10px 4px;
+  text-transform: uppercase;
+}
+
+.nav button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav button em {
+  color: #9fb4ac;
+  font-size: 11px;
+  font-style: normal;
 }
 
 .content {
@@ -195,6 +251,35 @@ a {
   margin-bottom: 24px;
 }
 
+.topbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.language-toggle {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  height: 42px;
+  overflow: hidden;
+}
+
+.language-toggle button {
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  min-width: 44px;
+}
+
+.language-toggle button.active {
+  background: var(--brand);
+  color: #ffffff;
+}
+
 .grid {
   display: grid;
   gap: 16px;
@@ -202,6 +287,10 @@ a {
 
 .stats {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.extended-stats {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .workspace {
@@ -233,6 +322,12 @@ a {
 .panel-header h2 {
   font-size: 18px;
   margin: 0;
+}
+
+.panel-subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 5px 0 0;
 }
 
 .stat {
@@ -267,6 +362,34 @@ a {
   padding: 14px;
 }
 
+.report-strip {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 16px 18px;
+}
+
+.report-strip h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.report-strip p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 5px 0 0;
+}
+
+.report-strip strong {
+  color: var(--brand-dark);
+  white-space: nowrap;
+}
+
 .upload-copy {
   display: grid;
   gap: 3px;
@@ -285,6 +408,84 @@ a {
 
 .hidden-file {
   display: none;
+}
+
+.schema-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.schema-row {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(140px, 0.65fr) minmax(0, 1.35fr) auto;
+  padding: 11px 12px;
+}
+
+.schema-row div {
+  display: grid;
+  gap: 2px;
+}
+
+.schema-row strong {
+  font-size: 13px;
+}
+
+.schema-row span,
+.schema-row p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.schema-row em {
+  background: var(--surface-2);
+  border-radius: 8px;
+  color: var(--brand-dark);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  padding: 6px 8px;
+}
+
+.report-card-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.report-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 7px;
+  min-height: 112px;
+  padding: 13px;
+}
+
+.report-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.report-card strong {
+  font-size: 22px;
+}
+
+.report-card p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.active-report-box {
+  align-items: start;
+  display: grid;
+  gap: 8px;
 }
 
 .charts {
@@ -395,8 +596,14 @@ th {
   }
 
   .stats,
+  .extended-stats,
   .workspace,
   .charts {
+    grid-template-columns: 1fr;
+  }
+
+  .report-card-grid,
+  .schema-row {
     grid-template-columns: 1fr;
   }
 }
@@ -408,6 +615,8 @@ th {
   }
 
   .topbar,
+  .topbar-actions,
+  .report-strip,
   .upload-box {
     align-items: stretch;
     flex-direction: column;

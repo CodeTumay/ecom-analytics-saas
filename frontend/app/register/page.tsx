@@ -1,6 +1,8 @@
 "use client";
 
 import { api } from "@/lib/api";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n";
 import { BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +10,29 @@ import { FormEvent, useState } from "react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { language, setLanguage } = useLanguage();
+  const t = {
+    tr: {
+      title: "Çalışma alanı oluştur",
+      subtitle: "Ücretsiz plan ayda 1 yükleme içerir",
+      email: "E-posta",
+      password: "Şifre",
+      submit: "Hesap oluştur",
+      loading: "Oluşturuluyor",
+      login: "Zaten hesabın var",
+      error: "Kayıt başarısız"
+    },
+    en: {
+      title: "Create workspace",
+      subtitle: "Free plan includes 1 upload per month",
+      email: "Email",
+      password: "Password",
+      submit: "Create account",
+      loading: "Creating",
+      login: "Already have an account",
+      error: "Registration failed"
+    }
+  }[language];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +48,7 @@ export default function RegisterPage() {
       localStorage.setItem("token", token.access_token);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(err instanceof Error ? err.message : t.error);
     } finally {
       setLoading(false);
     }
@@ -34,16 +59,19 @@ export default function RegisterPage() {
       <section className="auth-panel">
         <div className="brand">
           <BarChart3 size={30} color="#227c5c" />
-          <h1>Create workspace</h1>
-          <p>Free plan includes 1 upload per month</p>
+          <h1>{t.title}</h1>
+          <p>{t.subtitle}</p>
+        </div>
+        <div className="auth-language">
+          <LanguageToggle language={language} onChange={setLanguage} />
         </div>
         <form className="form" onSubmit={submit}>
           <label className="field">
-            <span>Email</span>
+            <span>{t.email}</span>
             <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
           </label>
           <label className="field">
-            <span>Password</span>
+            <span>{t.password}</span>
             <input
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -54,9 +82,9 @@ export default function RegisterPage() {
           </label>
           {error ? <span className="error">{error}</span> : null}
           <button className="primary-button" disabled={loading} type="submit">
-            {loading ? "Creating" : "Create account"}
+            {loading ? t.loading : t.submit}
           </button>
-          <Link className="muted" href="/login">Already have an account</Link>
+          <Link className="muted" href="/login">{t.login}</Link>
         </form>
       </section>
     </main>

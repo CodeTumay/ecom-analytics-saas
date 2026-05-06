@@ -16,12 +16,21 @@ import {
 
 const COLORS = ["#227c5c", "#c97b3a", "#5d7a99", "#9b4a4a"];
 
-export function Charts({ analysis }: { analysis?: Analysis }) {
+export function Charts({
+  analysis,
+  labels
+}: {
+  analysis?: Analysis;
+  labels?: {
+    revenueProfit: string;
+    costBreakdown: string;
+  };
+}) {
   return (
     <div className="grid charts">
       <div className="panel">
         <div className="panel-header">
-          <h2>Revenue and Profit</h2>
+          <h2>{labels?.revenueProfit || "Revenue and Profit"}</h2>
         </div>
         <div className="chart-box">
           <ResponsiveContainer width="100%" height="100%">
@@ -38,7 +47,7 @@ export function Charts({ analysis }: { analysis?: Analysis }) {
       </div>
       <div className="panel">
         <div className="panel-header">
-          <h2>Cost Breakdown</h2>
+          <h2>{labels?.costBreakdown || "Cost Breakdown"}</h2>
         </div>
         <div className="chart-box">
           <ResponsiveContainer width="100%" height="100%">
