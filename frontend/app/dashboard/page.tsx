@@ -416,6 +416,7 @@ export default function DashboardPage() {
       .filter((integration) => integration.status === "connected")
       .map((integration) => `${integration.category}:${integration.provider}`)
   );
+  const retailForecast = planningSummary?.retail_forecast || planningSummary?.sales_forecast;
   const integrationByProvider = new Map(
     integrations.map((integration) => [integration.provider, integration])
   );
@@ -1069,9 +1070,9 @@ export default function DashboardPage() {
                 <Brain size={18} />
               </div>
               <div className="forecast-grid">
-                <StatCard label={t.forecast30} value={money(planningSummary?.sales_forecast.next_30_days || 0)} />
-                <StatCard label={t.forecast60} value={money(planningSummary?.sales_forecast.next_60_days || 0)} />
-                <StatCard label={t.forecast90} value={money(planningSummary?.sales_forecast.next_90_days || 0)} />
+                <StatCard label={t.forecast30} value={money(retailForecast?.next_30_days || 0)} />
+                <StatCard label={t.forecast60} value={money(retailForecast?.next_60_days || 0)} />
+                <StatCard label={t.forecast90} value={money(retailForecast?.next_90_days || 0)} />
               </div>
               <div className="scenario-list">
                 {(planningSummary?.scenarios || []).map((scenario) => (

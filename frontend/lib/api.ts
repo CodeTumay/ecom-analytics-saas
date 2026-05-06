@@ -133,13 +133,25 @@ export type PlatformOverview = {
 };
 
 export type PlanningSummary = {
-  sales_forecast: {
+  retail_forecast?: {
     next_30_days: number;
     next_60_days: number;
     next_90_days: number;
     method: string;
   };
-  cash_projection: {
+  sales_forecast?: {
+    next_30_days: number;
+    next_60_days: number;
+    next_90_days: number;
+    method: string;
+  };
+  stock_cash_projection?: {
+    expected_revenue: number;
+    expected_product_cost: number;
+    inventory_buffer: number;
+    expected_profit: number;
+  };
+  cash_projection?: {
     expected_income: number;
     expected_outflow: number;
     expected_profit: number;
@@ -148,7 +160,8 @@ export type PlanningSummary = {
     id: string;
     revenue: number;
     cost: number;
-    ads_spend: number;
+    inventory_buffer?: number;
+    ads_spend?: number;
     profit: number;
     margin: number;
   }>;
