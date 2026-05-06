@@ -26,13 +26,14 @@ def generate_insights(analysis: dict) -> list[dict[str, str | float]]:
         )
 
     for product in analysis.get("loss_making_products", [])[:5]:
+        product_name = product.get("product_name") or product.get("name") or "This product"
         revenue_value = product.get("revenue", 0) or 0
         profit_gap = abs(product.get("profit", 0) or 0)
         price_increase = round((profit_gap / revenue_value) * 100 + 5, 1) if revenue_value else 0
         insights.append(
             {
                 "severity": "critical",
-                "message": f"{product['name']} is unprofitable.",
+                "message": f"{product_name} is unprofitable.",
                 "recommendation": f"Increase price by about {price_increase}% or reduce costs to target a positive margin.",
             }
         )
