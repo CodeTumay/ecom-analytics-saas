@@ -1,16 +1,20 @@
 :root {
-  --bg: #f6f7f9;
+  --bg: #f7f9fb;
   --surface: #ffffff;
-  --surface-2: #eef4f1;
-  --ink: #17211d;
-  --muted: #63716b;
-  --line: #d9e1dd;
-  --brand: #227c5c;
-  --brand-dark: #155c43;
-  --accent: #c97b3a;
+  --surface-2: #f2f4f6;
+  --surface-3: #eceef0;
+  --ink: #191c1e;
+  --muted: #45464d;
+  --line: #c6c6cd;
+  --brand: #000000;
+  --brand-dark: #2d3133;
+  --secondary: #0058be;
+  --secondary-soft: #d8e2ff;
+  --accent: #4edea3;
   --danger: #b42318;
   --warning: #a15c07;
-  --success: #1f7a45;
+  --success: #009668;
+  --shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
 }
 
 * {
@@ -57,7 +61,7 @@ a {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 20px 60px rgba(23, 33, 29, 0.08);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
   margin: 0 auto;
   max-width: 420px;
   padding: 28px;
@@ -66,8 +70,11 @@ a {
 
 .auth-panel h1,
 .page-title h1 {
-  font-size: 28px;
-  line-height: 1.15;
+  color: var(--brand);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.25;
   margin: 0;
 }
 
@@ -104,7 +111,7 @@ a {
 .field select {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   color: var(--ink);
   min-height: 44px;
   padding: 0 12px;
@@ -119,7 +126,7 @@ a {
 .ghost-button,
 .icon-button {
   align-items: center;
-  border-radius: 8px;
+  border-radius: 4px;
   display: inline-flex;
   font-weight: 800;
   gap: 8px;
@@ -157,31 +164,52 @@ a {
 .app-shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 304px 1fr;
+  grid-template-columns: 260px minmax(0, 1fr);
 }
 
 .sidebar {
-  background: #16241f;
-  color: #e9f1ee;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
+  height: 100vh;
   justify-content: space-between;
-  padding: 24px;
+  left: 0;
+  padding: 32px 16px;
+  position: sticky;
+  top: 0;
 }
 
 .brand {
+  align-items: center;
   display: grid;
-  gap: 4px;
+  gap: 8px;
+  grid-template-columns: 32px minmax(0, 1fr);
+  padding: 0 16px;
 }
 
 .brand strong {
-  font-size: 19px;
+  color: var(--brand);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .brand span,
 .sidebar-meta {
-  color: #aec2ba;
-  font-size: 13px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.brand svg {
+  background: var(--brand);
+  border-radius: 4px;
+  color: #ffffff;
+  padding: 6px;
 }
 
 .nav {
@@ -192,8 +220,8 @@ a {
 
 .nav a {
   align-items: center;
-  border-radius: 8px;
-  color: #dbe7e3;
+  border-radius: 4px;
+  color: var(--muted);
   display: flex;
   gap: 10px;
   padding: 10px 12px;
@@ -202,8 +230,9 @@ a {
 .nav button {
   align-items: center;
   background: transparent;
-  border-radius: 8px;
-  color: #dbe7e3;
+  border-left: 4px solid transparent;
+  border-radius: 4px;
+  color: var(--muted);
   display: grid;
   gap: 8px;
   grid-template-columns: 18px minmax(0, 1fr) auto;
@@ -215,7 +244,9 @@ a {
 
 .nav a.active,
 .nav button.active {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-3);
+  border-left-color: var(--secondary);
+  color: var(--secondary);
 }
 
 .report-sidebar {
@@ -233,7 +264,7 @@ a {
 }
 
 .nav-group-title {
-  color: #8fa79e;
+  color: var(--muted);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0;
@@ -248,21 +279,71 @@ a {
 }
 
 .nav button em {
-  color: #9fb4ac;
+  color: var(--muted);
   font-size: 11px;
   font-style: normal;
 }
 
 .content {
-  padding: 28px;
+  min-width: 0;
+  padding: 0 32px 48px;
 }
 
 .topbar {
-  align-items: flex-start;
+  align-items: center;
+  background: rgba(247, 249, 251, 0.96);
+  border-bottom: 1px solid var(--line);
   display: flex;
   gap: 16px;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin: 0 -32px 32px;
+  min-height: 64px;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.topbar-search {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  width: min(360px, 100%);
+}
+
+.topbar-search input {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  outline: 0;
+  width: 100%;
+}
+
+.dashboard-heading {
+  align-items: end;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin: 0 auto 32px;
+  max-width: 1440px;
+  width: 100%;
+}
+
+.date-filter {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
 }
 
 .topbar-actions {
@@ -278,7 +359,7 @@ a {
   align-items: center;
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   display: inline-flex;
   gap: 8px;
   min-height: 42px;
@@ -303,7 +384,7 @@ a {
 .language-toggle {
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
   height: 42px;
@@ -334,17 +415,22 @@ a {
 }
 
 .stats {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 auto 24px;
+  max-width: 1440px;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .extended-stats {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .workspace {
   align-items: start;
-  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 0.9fr);
-  margin-top: 16px;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 0.7fr);
+  margin: 0 auto;
+  max-width: 1440px;
+  width: 100%;
 }
 
 .panel,
@@ -354,10 +440,66 @@ a {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.product-card-list {
+  display: none;
+}
+
+.product-card-mobile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+}
+
+.product-thumb {
+  align-items: center;
+  background: var(--surface-3);
+  color: var(--secondary);
+  display: flex;
+  flex: 0 0 80px;
+  font-size: 28px;
+  font-weight: 900;
+  height: 80px;
+  justify-content: center;
+}
+
+.product-card-copy {
+  display: grid;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+}
+
+.product-card-copy h3 {
+  font-size: 14px;
+  line-height: 1.25;
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.product-card-copy span,
+.product-card-metrics em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.product-card-metrics {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
 }
 
 .panel {
-  padding: 18px;
+  padding: 24px;
 }
 
 .panel-header {
@@ -388,20 +530,26 @@ a {
 
 .stat {
   min-width: 0;
-  padding: 16px;
+  padding: 24px;
 }
 
 .stat span {
   color: var(--muted);
   display: block;
-  font-size: 13px;
-  font-weight: 700;
+  font-family: "Work Sans", Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
 .stat strong {
   display: block;
-  font-size: 25px;
+  color: var(--brand);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0;
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -413,8 +561,8 @@ a {
 .upload-box {
   align-items: center;
   background: var(--surface-2);
-  border: 1px dashed #9cb5ab;
-  border-radius: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
   display: flex;
   gap: 12px;
   justify-content: space-between;
@@ -431,6 +579,7 @@ a {
   gap: 18px;
   justify-content: space-between;
   margin-top: 16px;
+  margin-bottom: 16px;
   padding: 16px 18px;
 }
 
@@ -446,7 +595,7 @@ a {
 }
 
 .report-strip strong {
-  color: var(--brand-dark);
+  color: var(--secondary);
   white-space: nowrap;
 }
 
@@ -536,7 +685,7 @@ a {
 .sync-days-field {
   align-items: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   display: inline-flex;
   gap: 8px;
   min-height: 42px;
@@ -568,7 +717,7 @@ a {
 
 .integration-fields input {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   min-height: 40px;
   padding: 0 10px;
   width: 100%;
@@ -657,19 +806,22 @@ a {
   border-radius: 8px;
   display: grid;
   gap: 7px;
-  min-height: 112px;
+  background: var(--bg);
+  min-height: 0;
   min-width: 0;
   padding: 13px;
 }
 
 .report-card span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .report-card strong {
-  font-size: 22px;
+  color: var(--brand);
+  font-family: "Work Sans", Inter, sans-serif;
+  font-size: 20px;
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -720,8 +872,8 @@ a {
 }
 
 .provider-card.connected {
-  border-color: #8bc3ad;
-  background: #f0faf5;
+  border-color: var(--accent);
+  background: rgba(111, 251, 190, 0.12);
 }
 
 .provider-card b,
@@ -771,7 +923,7 @@ a {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
-  color: var(--brand-dark);
+  color: var(--secondary);
   font-size: 12px;
   font-weight: 800;
   padding: 7px 10px;
@@ -784,11 +936,11 @@ a {
 }
 
 .charts {
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
 }
 
 .chart-box {
-  height: 280px;
+  height: 240px;
   min-width: 0;
 }
 
@@ -798,7 +950,7 @@ a {
 }
 
 .alert {
-  border-left: 4px solid var(--brand);
+  border-left: 4px solid var(--secondary);
   padding: 12px;
 }
 
@@ -919,7 +1071,7 @@ th {
 }
 
 .combined-panel {
-  border-color: #9cb5ab;
+  border-color: var(--accent);
 }
 
 .included-report-list {
@@ -964,6 +1116,10 @@ th {
   font-weight: 700;
 }
 
+.bottom-nav {
+  display: none;
+}
+
 @media (max-width: 1040px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -990,6 +1146,51 @@ th {
 
   .content {
     min-width: 0;
+    padding: 0 18px 96px;
+  }
+
+  .topbar {
+    margin: 0 -18px 24px;
+    padding: 0 18px;
+  }
+
+  .dashboard-heading {
+    align-items: start;
+    flex-direction: column;
+    margin-bottom: 24px;
+  }
+
+  .bottom-nav {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.98);
+    border-top: 1px solid var(--line);
+    bottom: 0;
+    box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    height: 64px;
+    justify-content: space-around;
+    left: 0;
+    padding: 0 12px;
+    position: fixed;
+    right: 0;
+    z-index: 50;
+  }
+
+  .bottom-nav button {
+    align-items: center;
+    background: transparent;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    font-size: 10px;
+    font-weight: 800;
+    gap: 3px;
+    min-width: 64px;
+    text-transform: uppercase;
+  }
+
+  .bottom-nav button.active {
+    color: var(--secondary);
   }
 }
 
@@ -999,27 +1200,37 @@ th {
     padding: 18px;
   }
 
-  .topbar,
-  .topbar-actions,
   .report-strip,
   .upload-box {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .topbar {
+    gap: 10px;
+    min-height: 64px;
+  }
+
+  .topbar-search {
+    display: none;
+  }
+
   .page-title h1 {
     font-size: 24px;
-    line-height: 1.15;
+    line-height: 1.25;
   }
 
   .topbar-actions {
-    justify-content: stretch;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    overflow-x: auto;
+    width: 100%;
   }
 
   .toolbar-group,
   .language-toggle,
   .topbar-actions .ghost-button {
-    width: 100%;
+    flex: 0 0 auto;
   }
 
   .toolbar-group {
@@ -1037,7 +1248,7 @@ th {
   }
 
   .panel {
-    padding: 14px;
+    padding: 16px;
   }
 
   .panel-header {
@@ -1054,7 +1265,24 @@ th {
   }
 
   .stat strong {
-    font-size: 22px;
+    font-size: 32px;
+  }
+
+  .product-table-wrap {
+    display: none;
+  }
+
+  .product-card-list {
+    display: grid;
+    gap: 24px;
+  }
+
+  .charts {
+    gap: 24px;
+  }
+
+  .chart-box {
+    height: 220px;
   }
 
   .upload-item,

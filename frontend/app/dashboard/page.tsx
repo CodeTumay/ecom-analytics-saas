@@ -17,6 +17,7 @@ import {
   Boxes,
   Brain,
   Calculator,
+  CalendarDays,
   CircleDollarSign,
   CreditCard,
   FileText,
@@ -743,9 +744,12 @@ export default function DashboardPage() {
 
       <section className="content">
         <div className="topbar">
-          <div className="page-title">
-            <h1>{activeView === "settings" ? t.settings : t.title}</h1>
-            <p>{activeView === "settings" ? t.apiConnectionsHelp : combinedAnalysis ? t.generalReport : uploadStatus || t.ready}</p>
+          <div className="topbar-search">
+            <PackageSearch size={18} />
+            <input
+              aria-label={language === "tr" ? "Analitik ara" : "Search analytics"}
+              placeholder={language === "tr" ? "Analitik ara..." : "Search analytics..."}
+            />
           </div>
           <div className="topbar-actions">
             <div className="toolbar-group" aria-label={t.currency}>
@@ -777,6 +781,17 @@ export default function DashboardPage() {
               <LogOut size={17} />
               {t.signOut}
             </button>
+          </div>
+        </div>
+
+        <div className="dashboard-heading">
+          <div className="page-title">
+            <h1>{activeView === "settings" ? t.settings : t.title}</h1>
+            <p>{activeView === "settings" ? t.apiConnectionsHelp : combinedAnalysis ? t.generalReport : uploadStatus || t.ready}</p>
+          </div>
+          <div className="date-filter">
+            <CalendarDays size={18} />
+            <span>{language === "tr" ? "Son 30 Gün" : "Last 30 Days"}</span>
           </div>
         </div>
 
@@ -1252,6 +1267,24 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+      <footer className="bottom-nav">
+        <button className={activeView === "report" ? "active" : ""} type="button" onClick={() => setActiveView("report")}>
+          <BarChart3 size={20} />
+          <span>{language === "tr" ? "Finans" : "Finance"}</span>
+        </button>
+        <button type="button" onClick={() => setActiveReport("sales_performance")}>
+          <LineChart size={20} />
+          <span>{language === "tr" ? "Performans" : "Performance"}</span>
+        </button>
+        <button type="button" onClick={() => setActiveReport("shipping_logistics")}>
+          <Truck size={20} />
+          <span>{language === "tr" ? "Operasyon" : "Ops"}</span>
+        </button>
+        <button className={activeView === "settings" ? "active" : ""} type="button" onClick={() => setActiveView("settings")}>
+          <Settings size={20} />
+          <span>{t.settings}</span>
+        </button>
+      </footer>
     </main>
   );
 }

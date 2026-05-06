@@ -14,7 +14,7 @@ import {
   YAxis
 } from "recharts";
 
-const COLORS = ["#227c5c", "#c97b3a", "#5d7a99", "#9b4a4a"];
+const COLORS = ["#0058be", "#4edea3", "#adc6ff", "#2d3133"];
 
 export function Charts({
   analysis,
@@ -37,12 +37,12 @@ export function Charts({
         <div className="chart-box">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={analysis?.revenue_trends || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#d9e1dd" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0e3e5" />
               <XAxis dataKey="period" tickLine={false} axisLine={false} />
               <YAxis tickLine={false} axisLine={false} />
               <Tooltip formatter={(value) => formatMoney ? formatMoney(Number(value)) : value} />
-              <Bar dataKey="revenue" fill="#227c5c" radius={[5, 5, 0, 0]} />
-              <Bar dataKey="profit" fill="#c97b3a" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="revenue" fill="#0058be" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="profit" fill="#4edea3" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
