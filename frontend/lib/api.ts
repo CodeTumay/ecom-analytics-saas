@@ -28,6 +28,7 @@ export type Insight = {
 };
 
 export type Analysis = {
+  report_type?: string;
   totals: Totals;
   top_profitable_products: ProductRow[];
   loss_making_products: ProductRow[];
@@ -36,11 +37,36 @@ export type Analysis = {
   products: ProductRow[];
   orders: ProductRow[];
   insights: Insight[];
+  included_reports?: Array<{
+    id: number;
+    filename: string;
+    report_type: string;
+    totals: Totals;
+  }>;
+};
+
+export type ReportField = {
+  key: string;
+  label_tr: string;
+  label_en: string;
+  required: boolean;
+  kind: "text" | "number" | "date" | string;
+  aliases: string[];
+};
+
+export type ReportDefinition = {
+  id: string;
+  label_tr: string;
+  label_en: string;
+  description_tr: string;
+  description_en: string;
+  fields: ReportField[];
 };
 
 export type AnalysisResponse = {
   upload_id: number;
   status: "queued" | "processing" | "needs_mapping" | "completed" | "failed";
+  report_type?: string;
   mapping?: Record<string, string>;
   analysis?: Analysis | {
     columns: string[];
@@ -58,6 +84,7 @@ export type DashboardResponse = {
     id: number;
     filename: string;
     status: string;
+    report_type?: string;
     created_at: string;
   }>;
 };
@@ -107,9 +134,13 @@ export const api = {
 
   dashboard: (token: string) => request<DashboardResponse>("/dashboard", {}, token),
 
-  upload: (token: string, file: File) => {
+  reportTypes: (token: string) =>
+    request<{ reports: ReportDefinition[] }>("/report-types", {}, token),
+
+  upload: (token: string, file: File, reportType = "profitability") => {
     const form = new FormData();
     form.append("file", file);
+    form.append("report_type", reportType);
     return request<{ id: number; status: string }>("/upload", {
       method: "POST",
       body: form
@@ -118,6 +149,12 @@ export const api = {
 
   analysis: (token: string, uploadId: number) =>
     request<AnalysisResponse>(`/analysis/${uploadId}`, {}, token),
+
+  combinedReport: (token: string, uploadIds: number[]) =>
+    request<Analysis>("/reports/combined", {
+      method: "POST",
+      body: JSON.stringify({ upload_ids: uploadIds })
+    }, token),
 
   saveMapping: (token: string, uploadId: number, mapping: Record<string, string>) =>
     request<{ id: number; status: string }>(`/analysis/${uploadId}/mapping`, {

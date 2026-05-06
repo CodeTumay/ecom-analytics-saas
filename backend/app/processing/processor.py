@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from app.processing.analytics import build_analysis
 from app.processing.column_mapping import detect_mapping, validate_user_mapping
-from app.processing.profitability import build_profitability_frame, product_level_profit
+from app.processing.report_analysis import build_report_analysis
+from app.processing.report_catalog import get_report_definition
 from app.services.insights import generate_insights
 
 CSV_ENCODINGS = ("utf-8-sig", "utf-8", "cp1254", "latin1")
@@ -59,30 +59,53 @@ def read_marketplace_file(path: str | Path) -> pd.DataFrame:
     raise ValueError("Unsupported file type")
 
 
-def process_file(path: str | Path, user_mapping: dict[str, str] | None = None) -> dict:
+def _mapping_report_type(user_mapping: dict[str, str] | None, report_type: str | None) -> str:
+    if report_type:
+        return report_type
+    if user_mapping:
+        return str(user_mapping.get("__report_type") or "profitability")
+    return "profitability"
+
+
+def process_file(
+    path: str | Path,
+    user_mapping: dict[str, str] | None = None,
+    report_type: str | None = None,
+) -> dict:
     df = read_marketplace_file(path)
     if df.empty:
         raise ValueError("Uploaded file has no rows")
 
+    selected_report_type = _mapping_report_type(user_mapping, report_type)
+    report = get_report_definition(selected_report_type)
+    clean_user_mapping = {
+        key: value for key, value in (user_mapping or {}).items() if not key.startswith("__")
+    }
     mapping_result = (
-        validate_user_mapping(df, user_mapping) if user_mapping else detect_mapping(df)
+        validate_user_mapping(df, clean_user_mapping, selected_report_type)
+        if clean_user_mapping
+        else detect_mapping(df, selected_report_type)
     )
     if mapping_result.needs_user_mapping:
         return {
             "status": "needs_mapping",
-            "mapping": mapping_result.mapping,
+            "report_type": report.id,
+            "report_label_tr": report.label_tr,
+            "report_label_en": report.label_en,
+            "mapping": {"__report_type": report.id, **mapping_result.mapping},
             "columns": [str(column) for column in df.columns],
             "missing_required": mapping_result.missing_required,
             "missing_optional": mapping_result.missing_optional,
         }
 
-    order_frame = build_profitability_frame(df, mapping_result.mapping)
-    products = product_level_profit(order_frame)
-    analysis = build_analysis(order_frame, products)
+    analysis = build_report_analysis(df, mapping_result.mapping, report.id)
     analysis["insights"] = generate_insights(analysis)
 
     return {
         "status": "completed",
-        "mapping": mapping_result.mapping,
+        "report_type": report.id,
+        "report_label_tr": report.label_tr,
+        "report_label_en": report.label_en,
+        "mapping": {"__report_type": report.id, **mapping_result.mapping},
         "analysis": analysis,
     }

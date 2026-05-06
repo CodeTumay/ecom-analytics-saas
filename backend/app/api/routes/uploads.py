@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -17,6 +17,7 @@ ALLOWED_EXTENSIONS = {".csv", ".xlsx"}
 @router.post("/upload", response_model=UploadOut, status_code=status.HTTP_202_ACCEPTED)
 def upload_file(
     file: UploadFile = File(...),
+    report_type: str = Form("profitability"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Upload:
@@ -28,13 +29,14 @@ def upload_file(
         file_path=str(file_path),
         original_filename=file.filename or "upload",
         status=UploadStatus.QUEUED,
+        mapping={"__report_type": report_type},
     )
     db.add(upload)
     db.commit()
     db.refresh(upload)
 
     try:
-        process_upload.delay(upload.id)
+        process_upload.delay(upload.id, None, report_type)
     except Exception as exc:
         upload.status = UploadStatus.FAILED
         upload.error_message = f"Could not enqueue processing job: {exc}"

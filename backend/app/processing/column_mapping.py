@@ -1,51 +1,10 @@
 import re
+import unicodedata
 from dataclasses import dataclass
 
 import pandas as pd
 
-
-CANONICAL_FIELDS = [
-    "product_name",
-    "revenue",
-    "cost",
-    "commission",
-    "shipping",
-    "ads_spend",
-]
-
-REQUIRED_FIELDS = ["product_name", "revenue", "cost"]
-
-ALIASES = {
-    "product_name": [
-        "product",
-        "productname",
-        "item",
-        "itemname",
-        "sku",
-        "title",
-        "urun",
-        "urunadi",
-        "ürün",
-        "ürünadı",
-        "name",
-    ],
-    "revenue": [
-        "revenue",
-        "sales",
-        "grosssales",
-        "total",
-        "price",
-        "amount",
-        "satis",
-        "satış",
-        "ciro",
-        "gelir",
-    ],
-    "cost": ["cost", "cogs", "unitcost", "buyingprice", "maliyet", "urunmaliyeti"],
-    "commission": ["commission", "marketplacefee", "referralfee", "komisyon"],
-    "shipping": ["shipping", "shipment", "delivery", "cargo", "kargo", "nakliye"],
-    "ads_spend": ["adspend", "ads", "advertising", "marketing", "ppc", "reklam", "reklamgideri"],
-}
+from app.processing.report_catalog import get_report_definition
 
 
 @dataclass(frozen=True)
@@ -61,43 +20,62 @@ class MappingResult:
 
 def normalize_column_name(value: str) -> str:
     normalized = value.lower().strip()
-    normalized = normalized.replace("ı", "i").replace("İ", "i")
-    normalized = normalized.replace("ğ", "g").replace("ü", "u")
-    normalized = normalized.replace("ş", "s").replace("ö", "o").replace("ç", "c")
+    normalized = (
+        normalized.replace("ı", "i")
+        .replace("İ", "i")
+        .replace("ğ", "g")
+        .replace("ü", "u")
+        .replace("ş", "s")
+        .replace("ö", "o")
+        .replace("ç", "c")
+        .replace("Ä±", "i")
+        .replace("Ä°", "i")
+        .replace("ÄŸ", "g")
+        .replace("Ã¼", "u")
+        .replace("ÅŸ", "s")
+        .replace("Ã¶", "o")
+        .replace("Ã§", "c")
+    )
+    normalized = unicodedata.normalize("NFKD", normalized)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
     return re.sub(r"[^a-z0-9]+", "", normalized)
 
 
-def detect_mapping(df: pd.DataFrame) -> MappingResult:
+def detect_mapping(df: pd.DataFrame, report_type: str | None = None) -> MappingResult:
+    report = get_report_definition(report_type)
     normalized_columns = {normalize_column_name(str(col)): str(col) for col in df.columns}
     mapping: dict[str, str] = {}
 
-    for field in CANONICAL_FIELDS:
-        aliases = [normalize_column_name(alias) for alias in [field, *ALIASES[field]]]
+    for field in report.fields:
+        aliases = [normalize_column_name(alias) for alias in [field.key, *field.aliases]]
         for alias in aliases:
             if alias in normalized_columns:
-                mapping[field] = normalized_columns[alias]
+                mapping[field.key] = normalized_columns[alias]
                 break
 
-    missing_required = [field for field in REQUIRED_FIELDS if field not in mapping]
+    missing_required = [field for field in report.required_fields if field not in mapping]
     missing_optional = [
-        field
-        for field in CANONICAL_FIELDS
-        if field not in mapping and field not in missing_required
+        field.key
+        for field in report.fields
+        if field.key not in mapping and field.key not in missing_required
     ]
     return MappingResult(mapping, missing_required, missing_optional)
 
 
-def validate_user_mapping(df: pd.DataFrame, mapping: dict[str, str]) -> MappingResult:
+def validate_user_mapping(
+    df: pd.DataFrame, mapping: dict[str, str], report_type: str | None = None
+) -> MappingResult:
+    report = get_report_definition(report_type)
     columns = {str(col) for col in df.columns}
     cleaned = {
         field: column
         for field, column in mapping.items()
-        if field in CANONICAL_FIELDS and column in columns
+        if field in report.field_keys and column in columns
     }
-    missing_required = [field for field in REQUIRED_FIELDS if field not in cleaned]
+    missing_required = [field for field in report.required_fields if field not in cleaned]
     missing_optional = [
-        field
-        for field in CANONICAL_FIELDS
-        if field not in cleaned and field not in missing_required
+        field.key
+        for field in report.fields
+        if field.key not in cleaned and field.key not in missing_required
     ]
     return MappingResult(cleaned, missing_required, missing_optional)

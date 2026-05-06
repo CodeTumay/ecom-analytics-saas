@@ -106,6 +106,10 @@ a {
   width: 100%;
 }
 
+.report-type-field {
+  margin-bottom: 14px;
+}
+
 .primary-button,
 .ghost-button,
 .icon-button {
@@ -572,6 +576,74 @@ th {
   justify-content: space-between;
   padding: 10px;
   width: 100%;
+}
+
+.selectable-upload {
+  gap: 10px;
+}
+
+.selectable-upload label {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.selectable-upload label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectable-upload button {
+  align-items: end;
+  background: transparent;
+  color: var(--ink);
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  min-width: 112px;
+}
+
+.combine-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.combined-panel {
+  border-color: #9cb5ab;
+}
+
+.included-report-list {
+  display: grid;
+  gap: 8px;
+}
+
+.included-report {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: 10px 12px;
+}
+
+.included-report strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.included-report span,
+.included-report em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .mapping-grid {

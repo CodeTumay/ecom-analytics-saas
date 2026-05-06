@@ -7,7 +7,11 @@ from app.worker.celery_app import celery_app
 
 
 @celery_app.task(name="process_upload")
-def process_upload(upload_id: int, user_mapping: dict[str, str] | None = None) -> None:
+def process_upload(
+    upload_id: int,
+    user_mapping: dict[str, str] | None = None,
+    report_type: str | None = None,
+) -> None:
     db = SessionLocal()
     try:
         upload = db.get(Upload, upload_id)
@@ -18,7 +22,8 @@ def process_upload(upload_id: int, user_mapping: dict[str, str] | None = None) -
         upload.error_message = None
         db.commit()
 
-        result = process_file(upload.file_path, user_mapping or upload.mapping)
+        selected_report_type = report_type or (upload.mapping or {}).get("__report_type")
+        result = process_file(upload.file_path, user_mapping or upload.mapping, selected_report_type)
         upload.mapping = result.get("mapping")
 
         if result["status"] == "needs_mapping":

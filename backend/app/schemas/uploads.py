@@ -15,9 +15,14 @@ class MappingRequest(BaseModel):
     mapping: dict[str, str]
 
 
+class CombinedReportRequest(BaseModel):
+    upload_ids: list[int]
+
+
 class AnalysisOut(BaseModel):
     upload_id: int
     status: str
+    report_type: str | None = None
     mapping: dict | None = None
     analysis: dict | None = None
     error_message: str | None = None

@@ -7,7 +7,7 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { MappingForm } from "@/components/MappingForm";
 import { ProductTable } from "@/components/ProductTable";
 import { StatCard } from "@/components/StatCard";
-import { Analysis, AnalysisResponse, api } from "@/lib/api";
+import { Analysis, AnalysisResponse, ReportDefinition, api } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import {
   AlertTriangle,
@@ -87,6 +87,13 @@ const text = {
     summary: "Özet",
     currentUpload: "Mevcut analiz",
     reportCards: "Kapsamlı Rapor Özeti",
+    reportType: "Rapor tipi",
+    selectReportType: "Yüklenecek rapor tipini seç",
+    combineReports: "Genel rapor oluştur",
+    selectedReports: "seçili rapor",
+    generalReport: "Genel Birleşik Rapor",
+    clearGeneralReport: "Genel raporu kapat",
+    completedOnly: "Sadece tamamlanan raporlar seçilebilir",
     costBreakdown: "Maliyet Kırılımı",
     topProducts: "En Karlı Ürünler",
     lossMakers: "Zarar Eden Ürünler",
@@ -153,6 +160,13 @@ const text = {
     summary: "Summary",
     currentUpload: "Current analysis",
     reportCards: "Expanded Report Summary",
+    reportType: "Report type",
+    selectReportType: "Select report type before upload",
+    combineReports: "Build combined report",
+    selectedReports: "selected reports",
+    generalReport: "Combined General Report",
+    clearGeneralReport: "Close combined report",
+    completedOnly: "Only completed reports can be selected",
     costBreakdown: "Cost Breakdown",
     topProducts: "Top Profitable Products",
     lossMakers: "Loss-making Products",
@@ -209,14 +223,21 @@ export default function DashboardPage() {
   const t = text[language];
   const [token, setToken] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<Awaited<ReturnType<typeof api.dashboard>>>();
+  const [reportTypes, setReportTypes] = useState<ReportDefinition[]>([]);
+  const [selectedReportType, setSelectedReportType] = useState("profitability");
   const [analysisResponse, setAnalysisResponse] = useState<AnalysisResponse>();
+  const [combinedAnalysis, setCombinedAnalysis] = useState<Analysis>();
+  const [selectedUploadIds, setSelectedUploadIds] = useState<number[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeReport, setActiveReport] = useState("profitability");
 
-  const analysis = isFullAnalysis(analysisResponse?.analysis) ? analysisResponse.analysis : undefined;
+  const currentAnalysis = isFullAnalysis(analysisResponse?.analysis) ? analysisResponse.analysis : undefined;
+  const analysis = combinedAnalysis || currentAnalysis;
   const totals = analysis?.totals || dashboard?.totals;
   const products = analysis?.products || [];
+  const selectedDefinition =
+    reportTypes.find((report) => report.id === selectedReportType) || reportTypes[0];
   const totalCosts =
     (totals?.cost || 0) +
     (totals?.commission || 0) +
@@ -317,6 +338,14 @@ export default function DashboardPage() {
     setDashboard(data);
   }
 
+  async function loadReportTypes(activeToken: string) {
+    const data = await api.reportTypes(activeToken);
+    setReportTypes(data.reports);
+    if (data.reports.length && !data.reports.some((report) => report.id === selectedReportType)) {
+      setSelectedReportType(data.reports[0].id);
+    }
+  }
+
   async function pollAnalysis(activeToken: string, uploadId: number) {
     for (let attempt = 0; attempt < 60; attempt += 1) {
       const response = await api.analysis(activeToken, uploadId);
@@ -335,6 +364,7 @@ export default function DashboardPage() {
       return;
     }
     setToken(stored);
+    loadReportTypes(stored).catch(() => undefined);
     loadDashboard(stored).catch((err) => {
       setError(err instanceof Error ? err.message : "Could not load dashboard");
       if (err instanceof Error && err.message.includes("validate credentials")) {
@@ -349,7 +379,8 @@ export default function DashboardPage() {
     setBusy(true);
     setError("");
     try {
-      const upload = await api.upload(token, file);
+      const upload = await api.upload(token, file, selectedReportType);
+      setCombinedAnalysis(undefined);
       await pollAnalysis(token, upload.id);
       await loadDashboard(token);
     } catch (err) {
@@ -369,6 +400,27 @@ export default function DashboardPage() {
       await loadDashboard(token);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Mapping failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleUploadSelection(uploadId: number) {
+    setSelectedUploadIds((current) =>
+      current.includes(uploadId)
+        ? current.filter((id) => id !== uploadId)
+        : [...current, uploadId]
+    );
+  }
+
+  async function buildCombinedReport() {
+    if (!token || selectedUploadIds.length === 0) return;
+    setBusy(true);
+    setError("");
+    try {
+      setCombinedAnalysis(await api.combinedReport(token, selectedUploadIds));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not build combined report");
     } finally {
       setBusy(false);
     }
@@ -420,7 +472,7 @@ export default function DashboardPage() {
         <div className="topbar">
           <div className="page-title">
             <h1>{t.title}</h1>
-            <p>{uploadStatus || t.ready}</p>
+            <p>{combinedAnalysis ? t.generalReport : uploadStatus || t.ready}</p>
           </div>
           <div className="topbar-actions">
             <LanguageToggle language={language} onChange={setLanguage} />
@@ -460,6 +512,19 @@ export default function DashboardPage() {
                 </div>
                 {busy ? <span className="status">{t.processing}</span> : null}
               </div>
+              <label className="field report-type-field">
+                <span>{t.selectReportType}</span>
+                <select
+                  value={selectedReportType}
+                  onChange={(event) => setSelectedReportType(event.target.value)}
+                >
+                  {reportTypes.map((report) => (
+                    <option key={report.id} value={report.id}>
+                      {language === "tr" ? report.label_tr : report.label_en}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <FileUpload
                 disabled={busy}
                 labels={{
@@ -473,25 +538,59 @@ export default function DashboardPage() {
 
             <section className="panel">
               <div className="panel-header">
-                <h2>{t.uploadGuide}</h2>
+                <div>
+                  <h2>{t.uploadGuide}</h2>
+                  <p className="panel-subtitle">
+                    {selectedDefinition
+                      ? language === "tr"
+                        ? selectedDefinition.description_tr
+                        : selectedDefinition.description_en
+                      : t.reportType}
+                  </p>
+                </div>
                 <button className="ghost-button" type="button" onClick={downloadSampleCsv}>
                   <UploadCloud size={17} />
                   {t.sample}
                 </button>
               </div>
               <div className="schema-grid">
-                {(["product_name", "revenue", "cost", "commission", "shipping", "ads_spend"] as const).map((field) => (
-                  <div className="schema-row" key={field}>
+                {(selectedDefinition?.fields || []).map((field) => (
+                  <div className="schema-row" key={field.key}>
                     <div>
-                      <strong>{field}</strong>
-                      <span>{t.canonical[field]}</span>
+                      <strong>{field.key}</strong>
+                      <span>{language === "tr" ? field.label_tr : field.label_en}</span>
                     </div>
-                    <p>{t.aliases[field]}</p>
-                    <em>{["product_name", "revenue", "cost"].includes(field) ? t.required : t.optional}</em>
+                    <p>{field.aliases.join(", ")}</p>
+                    <em>{field.required ? t.required : t.optional}</em>
                   </div>
                 ))}
               </div>
             </section>
+
+            {combinedAnalysis ? (
+              <section className="panel combined-panel">
+                <div className="panel-header">
+                  <div>
+                    <h2>{t.generalReport}</h2>
+                    <p className="panel-subtitle">
+                      {combinedAnalysis.included_reports?.length || 0} {t.selectedReports}
+                    </p>
+                  </div>
+                  <button className="ghost-button" type="button" onClick={() => setCombinedAnalysis(undefined)}>
+                    {t.clearGeneralReport}
+                  </button>
+                </div>
+                <div className="included-report-list">
+                  {(combinedAnalysis.included_reports || []).map((report) => (
+                    <div className="included-report" key={report.id}>
+                      <strong>{report.filename}</strong>
+                      <span>{report.report_type}</span>
+                      <em>{money.format(report.totals?.profit || 0)}</em>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
             {analysisResponse?.status === "needs_mapping" ? (
               <MappingForm response={analysisResponse} onSubmit={saveMapping} />
@@ -557,17 +656,35 @@ export default function DashboardPage() {
               </div>
               <div className="upload-list">
                 {(dashboard?.recent_uploads || []).map((upload) => (
-                  <button
-                    className="upload-item"
-                    key={upload.id}
-                    type="button"
-                    onClick={() => token && pollAnalysis(token, upload.id)}
-                  >
-                    <span>{upload.filename}</span>
-                    <span className="status">{upload.status}</span>
-                  </button>
+                  <div className="upload-item selectable-upload" key={upload.id}>
+                    <label>
+                      <input
+                        checked={selectedUploadIds.includes(upload.id)}
+                        disabled={upload.status !== "completed"}
+                        type="checkbox"
+                        onChange={() => toggleUploadSelection(upload.id)}
+                      />
+                      <span>{upload.filename}</span>
+                    </label>
+                    <button type="button" onClick={() => token && pollAnalysis(token, upload.id)}>
+                      <span className="status">{upload.report_type || "profitability"}</span>
+                      <span className="status">{upload.status}</span>
+                    </button>
+                  </div>
                 ))}
               </div>
+              <div className="combine-actions">
+                <span className="muted">{selectedUploadIds.length} {t.selectedReports}</span>
+                <button
+                  className="primary-button"
+                  disabled={selectedUploadIds.length === 0 || busy}
+                  type="button"
+                  onClick={buildCombinedReport}
+                >
+                  {t.combineReports}
+                </button>
+              </div>
+              <p className="muted">{t.completedOnly}</p>
             </section>
 
             <section className="panel">
