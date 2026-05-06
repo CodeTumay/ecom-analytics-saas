@@ -94,12 +94,13 @@ def platform_overview(
 def list_integrations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> list[Integration]:
-    return db.scalars(
+) -> list[dict]:
+    integrations = db.scalars(
         select(Integration)
         .where(Integration.user_id == current_user.id)
         .order_by(Integration.category, Integration.provider)
     ).all()
+    return [_serialize_integration(integration) for integration in integrations]
 
 
 @router.post("/integrations", response_model=IntegrationOut, status_code=201)
@@ -107,7 +108,7 @@ def upsert_integration(
     payload: IntegrationCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> Integration:
+) -> dict:
     integration = db.scalar(
         select(Integration).where(
             Integration.user_id == current_user.id,
@@ -124,11 +125,15 @@ def upsert_integration(
         db.add(integration)
 
     integration.sync_frequency = payload.sync_frequency
-    integration.config = _masked_config(payload.config)
-    integration.status = "connected" if payload.config else "needs_credentials"
+    existing_config = integration.config or {}
+    incoming_config = {
+        key: value for key, value in (payload.config or {}).items() if value not in ("", None)
+    }
+    integration.config = {**existing_config, **incoming_config} if incoming_config else existing_config
+    integration.status = "connected" if integration.config else "needs_credentials"
     db.commit()
     db.refresh(integration)
-    return integration
+    return _serialize_integration(integration)
 
 
 @router.post("/integrations/{integration_id}/sync")
@@ -164,13 +169,10 @@ def import_trendyol_orders(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> TrendyolOrderImportOut:
+    credentials = _trendyol_credentials_from_payload(payload, db, current_user.id)
     try:
         response = fetch_shipment_packages(
-            TrendyolCredentials(
-                seller_id=payload.seller_id,
-                api_key=payload.api_key,
-                api_secret=payload.api_secret,
-            ),
+            credentials,
             start_date=payload.start_date,
             end_date=payload.end_date,
             page=payload.page,
@@ -362,6 +364,51 @@ def _masked_config(config: dict | None) -> dict | None:
         else:
             masked[key] = value
     return masked
+
+
+def _serialize_integration(integration: Integration) -> dict:
+    return {
+        "id": integration.id,
+        "category": integration.category,
+        "provider": integration.provider,
+        "status": integration.status,
+        "sync_frequency": integration.sync_frequency,
+        "config": _masked_config(integration.config),
+        "last_sync_at": integration.last_sync_at,
+    }
+
+
+def _trendyol_credentials_from_payload(
+    payload: TrendyolOrderImportRequest,
+    db: Session,
+    user_id: int,
+) -> TrendyolCredentials:
+    if payload.seller_id and payload.api_key and payload.api_secret:
+        return TrendyolCredentials(
+            seller_id=payload.seller_id,
+            api_key=payload.api_key,
+            api_secret=payload.api_secret,
+        )
+
+    integration = db.scalar(
+        select(Integration).where(
+            Integration.user_id == user_id,
+            Integration.category == "marketplace",
+            Integration.provider == "trendyol",
+        )
+    )
+    config = integration.config if integration else None
+    if not config:
+        raise HTTPException(status_code=400, detail="Trendyol API connection is not configured")
+
+    try:
+        return TrendyolCredentials(
+            seller_id=str(config["seller_id"]),
+            api_key=str(config["api_key"]),
+            api_secret=str(config["api_secret"]),
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail="Trendyol API connection is incomplete") from exc
 
 
 def _datasets_for_category(category: str) -> list[str]:

@@ -21,9 +21,9 @@ class IntegrationOut(BaseModel):
 
 
 class TrendyolOrderImportRequest(BaseModel):
-    seller_id: str
-    api_key: str
-    api_secret: str
+    seller_id: str | None = None
+    api_key: str | None = None
+    api_secret: str | None = None
     start_date: int | None = None
     end_date: int | None = None
     status: str | None = None

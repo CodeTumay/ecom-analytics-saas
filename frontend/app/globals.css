@@ -328,6 +328,11 @@ a {
   gap: 16px;
 }
 
+.report-view .settings-only,
+.settings-view .report-only {
+  display: none !important;
+}
+
 .stats {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -486,6 +491,67 @@ a {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.connection-list {
+  display: grid;
+  gap: 12px;
+}
+
+.connection-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.connection-card-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.connection-card-header > div {
+  display: grid;
+  gap: 3px;
+}
+
+.connection-card-header span,
+.connection-card-header em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.connection-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.sync-days-field {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+}
+
+.sync-days-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sync-days-field input {
+  border: 0;
+  max-width: 64px;
 }
 
 .integration-fields label {
@@ -993,6 +1059,8 @@ th {
 
   .upload-item,
   .combine-actions,
+  .connection-card-header,
+  .connection-actions,
   .included-report,
   .scenario-item {
     align-items: stretch;
@@ -1000,8 +1068,15 @@ th {
   }
 
   .upload-item,
-  .combine-actions {
+  .combine-actions,
+  .connection-actions {
     flex-direction: column;
+  }
+
+  .connection-actions .ghost-button,
+  .connection-actions .primary-button,
+  .sync-days-field {
+    width: 100%;
   }
 
   .selectable-upload button {

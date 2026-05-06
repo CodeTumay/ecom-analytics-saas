@@ -161,13 +161,14 @@ export type Integration = {
   provider: string;
   status: string;
   sync_frequency: string;
+  config?: Record<string, string> | null;
   last_sync_at?: string | null;
 };
 
 export type TrendyolOrderImportPayload = {
-  seller_id: string;
-  api_key: string;
-  api_secret: string;
+  seller_id?: string;
+  api_key?: string;
+  api_secret?: string;
   start_date?: number;
   end_date?: number;
   status?: string;
@@ -227,6 +228,20 @@ export const api = {
   planningSummary: (token: string) => request<PlanningSummary>("/planning/summary", {}, token),
 
   integrations: (token: string) => request<Integration[]>("/integrations", {}, token),
+
+  saveIntegration: (
+    token: string,
+    payload: {
+      category: string;
+      provider: string;
+      sync_frequency?: string;
+      config?: Record<string, string>;
+    }
+  ) =>
+    request<Integration>("/integrations", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }, token),
 
   importTrendyolOrders: (token: string, payload: TrendyolOrderImportPayload) =>
     request<{ upload_id: number; status: string; imported_rows: number; message: string }>(

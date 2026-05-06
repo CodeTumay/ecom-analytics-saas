@@ -26,9 +26,12 @@ import {
   Megaphone,
   PackageSearch,
   Percent,
+  Play,
   Printer,
   Radar,
   Receipt,
+  Save,
+  Settings,
   Send,
   ShieldCheck,
   ShoppingCart,
@@ -43,6 +46,14 @@ const percent = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0
 });
 
+const marketplaceConnections = [
+  { id: "trendyol", label: "Trendyol", fields: ["seller_id", "api_key", "api_secret"] },
+  { id: "hepsiburada", label: "Hepsiburada", fields: ["merchant_id", "api_key", "api_secret"] },
+  { id: "gittigidiyor", label: "GittiGidiyor", fields: ["api_key", "api_secret", "role_name"] },
+  { id: "amazon_tr", label: "Amazon TR", fields: ["seller_id", "client_id", "client_secret"] },
+  { id: "n11", label: "N11", fields: ["api_key", "api_secret"] }
+] as const;
+
 const text = {
   tr: {
     app: "Ecom Analytics",
@@ -54,6 +65,8 @@ const text = {
     failed: "Başarısız",
     processing: "İşleniyor",
     signOut: "Çıkış yap",
+    reportView: "Rapor",
+    settings: "Ayarlar",
     exportPdf: "PDF al",
     currency: "Para birimi",
     fxRate: "USD/TL kuru",
@@ -67,8 +80,15 @@ const text = {
     lossProducts: "Zarardaki Ürün",
     averageOrderProfit: "Ortalama Sipariş Karı",
     upload: "Dosya Yükle",
-    trendyolImport: "Trendyol'dan içe aktar",
-    trendyolHelp: "Satıcı ID, API key ve secret ile son siparişleri çekip analize gönder.",
+    dataSources: "Veri kaynakları",
+    apiConnections: "API Bağlantıları",
+    apiConnectionsHelp: "Pazaryeri API bilgilerini bir kez kaydet; sonrasında siparişleri tek tuşla çek.",
+    manualUpload: "Manuel dosya yükleme",
+    saveConnection: "Bağlantıyı kaydet",
+    savedConnection: "Bağlantı kayıtlı",
+    noConnection: "Bağlantı yok",
+    trendyolImport: "Trendyol siparişlerini çek",
+    trendyolHelp: "Kaydedilmiş Trendyol bağlantısıyla son siparişleri analize gönder.",
     sellerId: "Satıcı ID",
     apiKey: "API key",
     apiSecret: "API secret",
@@ -159,6 +179,8 @@ const text = {
     failed: "Failed",
     processing: "Processing",
     signOut: "Sign out",
+    reportView: "Report",
+    settings: "Settings",
     exportPdf: "Export PDF",
     currency: "Currency",
     fxRate: "USD/TRY rate",
@@ -172,8 +194,15 @@ const text = {
     lossProducts: "Loss Products",
     averageOrderProfit: "Avg. Order Profit",
     upload: "Upload File",
-    trendyolImport: "Import from Trendyol",
-    trendyolHelp: "Fetch recent orders with seller ID, API key, and secret, then queue analysis.",
+    dataSources: "Data sources",
+    apiConnections: "API Connections",
+    apiConnectionsHelp: "Save marketplace API credentials once, then sync orders with one click.",
+    manualUpload: "Manual file upload",
+    saveConnection: "Save connection",
+    savedConnection: "Connection saved",
+    noConnection: "No connection",
+    trendyolImport: "Sync Trendyol orders",
+    trendyolHelp: "Send recent orders to analysis with the saved Trendyol connection.",
     sellerId: "Seller ID",
     apiKey: "API key",
     apiSecret: "API secret",
@@ -361,12 +390,9 @@ export default function DashboardPage() {
   const [selectedUploadIds, setSelectedUploadIds] = useState<number[]>([]);
   const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("USD");
   const [usdToTry, setUsdToTry] = useState(DEFAULT_USD_TO_TRY);
-  const [trendyolForm, setTrendyolForm] = useState({
-    seller_id: "",
-    api_key: "",
-    api_secret: "",
-    days: "7"
-  });
+  const [activeView, setActiveView] = useState<"report" | "settings">("report");
+  const [syncDays, setSyncDays] = useState("7");
+  const [integrationForms, setIntegrationForms] = useState<Record<string, Record<string, string>>>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeReport, setActiveReport] = useState("profitability");
@@ -391,6 +417,9 @@ export default function DashboardPage() {
     integrations
       .filter((integration) => integration.status === "connected")
       .map((integration) => `${integration.category}:${integration.provider}`)
+  );
+  const integrationByProvider = new Map(
+    integrations.map((integration) => [integration.provider, integration])
   );
   const money = (value: number, maximumFractionDigits = 0) =>
     formatMoney(value, displayCurrency, usdToTry, maximumFractionDigits);
@@ -497,6 +526,17 @@ export default function DashboardPage() {
     setPlatformOverview(overview);
     setPlanningSummary(planning);
     setIntegrations(integrationList);
+    setIntegrationForms((current) => {
+      const next = { ...current };
+      integrationList.forEach((integration) => {
+        if (integration.config && !next[integration.provider]) {
+          next[integration.provider] = Object.fromEntries(
+            Object.entries(integration.config).filter(([, value]) => value !== "***")
+          );
+        }
+      });
+      return next;
+    });
   }
 
   async function pollAnalysis(activeToken: string, uploadId: number) {
@@ -580,18 +620,44 @@ export default function DashboardPage() {
     }
   }
 
+  function updateIntegrationField(provider: string, field: string, value: string) {
+    setIntegrationForms((current) => ({
+      ...current,
+      [provider]: {
+        ...(current[provider] || {}),
+        [field]: value
+      }
+    }));
+  }
+
+  async function saveMarketplaceIntegration(provider: string) {
+    if (!token) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api.saveIntegration(token, {
+        category: "marketplace",
+        provider,
+        sync_frequency: "hourly",
+        config: integrationForms[provider] || {}
+      });
+      await loadPlatform(token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Connection could not be saved");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function importTrendyolOrders() {
     if (!token) return;
     setBusy(true);
     setError("");
     try {
-      const days = Math.max(1, Number(trendyolForm.days) || 7);
+      const days = Math.max(1, Number(syncDays) || 7);
       const endDate = Date.now();
       const startDate = endDate - days * 24 * 60 * 60 * 1000;
       const upload = await api.importTrendyolOrders(token, {
-        seller_id: trendyolForm.seller_id,
-        api_key: trendyolForm.api_key,
-        api_secret: trendyolForm.api_secret,
         start_date: startDate,
         end_date: endDate,
         size: 200
@@ -616,7 +682,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${activeView === "settings" ? "settings-view" : "report-view"}`}>
       <aside className="sidebar report-sidebar">
         <div>
           <div className="brand">
@@ -625,29 +691,49 @@ export default function DashboardPage() {
             <span>{dashboard?.plan === "pro" ? "Pro" : "Free"} {t.plan}</span>
           </div>
           <nav className="nav report-nav">
-            {reportGroups.map((group) => (
-              <div className="nav-group" key={group.title}>
-                <span className="nav-group-title">{group.title}</span>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      className={activeReport === item.id ? "active" : ""}
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveReport(item.id);
-                        setSelectedReportType(item.id);
-                      }}
-                    >
-                      <Icon size={16} />
-                      <span>{item.label}</span>
-                      <em>{item.active ? t.available : t.planned}</em>
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+            <div className="nav-group">
+              <button
+                className={activeView === "report" ? "active" : ""}
+                type="button"
+                onClick={() => setActiveView("report")}
+              >
+                <FileText size={16} />
+                <span>{t.reportView}</span>
+                <em>{t.available}</em>
+              </button>
+              <button
+                className={activeView === "settings" ? "active" : ""}
+                type="button"
+                onClick={() => setActiveView("settings")}
+              >
+                <Settings size={16} />
+                <span>{t.settings}</span>
+                <em>{integrations.length}</em>
+              </button>
+            </div>
+            {activeView === "report" ? reportGroups.map((group) => (
+                <div className="nav-group" key={group.title}>
+                  <span className="nav-group-title">{group.title}</span>
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        className={activeReport === item.id ? "active" : ""}
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveReport(item.id);
+                          setSelectedReportType(item.id);
+                        }}
+                      >
+                        <Icon size={16} />
+                        <span>{item.label}</span>
+                        <em>{item.active ? t.available : t.planned}</em>
+                      </button>
+                    );
+                  })}
+                </div>
+              )) : null}
           </nav>
         </div>
         <div className="sidebar-meta">
@@ -658,8 +744,8 @@ export default function DashboardPage() {
       <section className="content">
         <div className="topbar">
           <div className="page-title">
-            <h1>{t.title}</h1>
-            <p>{combinedAnalysis ? t.generalReport : uploadStatus || t.ready}</p>
+            <h1>{activeView === "settings" ? t.settings : t.title}</h1>
+            <p>{activeView === "settings" ? t.apiConnectionsHelp : combinedAnalysis ? t.generalReport : uploadStatus || t.ready}</p>
           </div>
           <div className="topbar-actions">
             <div className="toolbar-group" aria-label={t.currency}>
@@ -683,7 +769,7 @@ export default function DashboardPage() {
               ) : null}
             </div>
             <LanguageToggle language={language} onChange={setLanguage} />
-            <button className="ghost-button" type="button" onClick={exportPdf}>
+            <button className="ghost-button report-only" type="button" onClick={exportPdf}>
               <Printer size={17} />
               {t.exportPdf}
             </button>
@@ -696,7 +782,7 @@ export default function DashboardPage() {
 
         {error ? <div className="alert critical"><strong>{error}</strong></div> : null}
 
-        <div className="grid stats extended-stats">
+        <div className="grid stats extended-stats report-only">
           <StatCard label={t.revenue} value={money(totals?.revenue || 0)} />
           <StatCard label={t.profit} value={money(totals?.profit || 0)} negative={(totals?.profit || 0) < 0} />
           <StatCard label={t.adsSpend} value={money(totals?.ads_spend || 0)} />
@@ -705,17 +791,17 @@ export default function DashboardPage() {
           <StatCard label={t.lossProducts} value={String(lossProducts)} negative={lossProducts > 0} />
         </div>
 
-        <section className="report-strip">
+        <section className="report-strip settings-only">
           <div>
-            <h2>{t.reportMap}</h2>
-            <p>{t.reportMapHelp}</p>
+            <h2>{t.dataSources}</h2>
+            <p>{t.apiConnectionsHelp}</p>
           </div>
-          <strong>{reportGroups.flatMap((group) => group.items).length} {t.reports}</strong>
+          <strong>{integrations.length} {t.configured}</strong>
         </section>
 
         <div className="grid workspace">
           <div className="grid">
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.upload}</h2>
@@ -750,68 +836,77 @@ export default function DashboardPage() {
               />
               <div className="integration-form">
                 <div>
-                  <h3>{t.trendyolImport}</h3>
-                  <p>{t.trendyolHelp}</p>
+                  <h3>{t.apiConnections}</h3>
+                  <p>{t.apiConnectionsHelp}</p>
                 </div>
-                <div className="integration-fields">
-                  <label>
-                    <span>{t.sellerId}</span>
-                    <input
-                      value={trendyolForm.seller_id}
-                      onChange={(event) =>
-                        setTrendyolForm((current) => ({ ...current, seller_id: event.target.value }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>{t.apiKey}</span>
-                    <input
-                      value={trendyolForm.api_key}
-                      onChange={(event) =>
-                        setTrendyolForm((current) => ({ ...current, api_key: event.target.value }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>{t.apiSecret}</span>
-                    <input
-                      type="password"
-                      value={trendyolForm.api_secret}
-                      onChange={(event) =>
-                        setTrendyolForm((current) => ({ ...current, api_secret: event.target.value }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>{t.syncDays}</span>
-                    <input
-                      min="1"
-                      type="number"
-                      value={trendyolForm.days}
-                      onChange={(event) =>
-                        setTrendyolForm((current) => ({ ...current, days: event.target.value }))
-                      }
-                    />
-                  </label>
+                <div className="connection-list">
+                  {marketplaceConnections.map((provider) => {
+                    const saved = integrationByProvider.get(provider.id);
+                    return (
+                      <div className="connection-card" key={provider.id}>
+                        <div className="connection-card-header">
+                          <div>
+                            <strong>{provider.label}</strong>
+                            <span>{saved ? t.savedConnection : t.noConnection}</span>
+                          </div>
+                          {saved ? <em>{saved.status}</em> : null}
+                        </div>
+                        <div className="integration-fields">
+                          {provider.fields.map((field) => (
+                            <label key={field}>
+                              <span>{field}</span>
+                              <input
+                                type={field.includes("secret") || field.includes("key") ? "password" : "text"}
+                                value={integrationForms[provider.id]?.[field] || ""}
+                                placeholder={saved?.config?.[field] === "***" ? "***" : ""}
+                                onChange={(event) =>
+                                  updateIntegrationField(provider.id, field, event.target.value)
+                                }
+                              />
+                            </label>
+                          ))}
+                        </div>
+                        <div className="connection-actions">
+                          <button
+                            className="ghost-button"
+                            disabled={busy}
+                            type="button"
+                            onClick={() => saveMarketplaceIntegration(provider.id)}
+                          >
+                            <Save size={17} />
+                            {t.saveConnection}
+                          </button>
+                          {provider.id === "trendyol" ? (
+                            <>
+                              <label className="sync-days-field">
+                                <span>{t.syncDays}</span>
+                                <input
+                                  min="1"
+                                  type="number"
+                                  value={syncDays}
+                                  onChange={(event) => setSyncDays(event.target.value)}
+                                />
+                              </label>
+                              <button
+                                className="primary-button"
+                                disabled={busy || !saved}
+                                type="button"
+                                onClick={importTrendyolOrders}
+                              >
+                                <Play size={17} />
+                                {t.syncOrders}
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <button
-                  className="primary-button"
-                  disabled={
-                    busy ||
-                    !trendyolForm.seller_id ||
-                    !trendyolForm.api_key ||
-                    !trendyolForm.api_secret
-                  }
-                  type="button"
-                  onClick={importTrendyolOrders}
-                >
-                  <Truck size={17} />
-                  {t.syncOrders}
-                </button>
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.uploadGuide}</h2>
@@ -856,7 +951,7 @@ export default function DashboardPage() {
             </section>
 
             {combinedAnalysis ? (
-              <section className="panel combined-panel">
+              <section className="panel combined-panel report-only">
                 <div className="panel-header">
                   <div>
                     <h2>{t.generalReport}</h2>
@@ -881,10 +976,12 @@ export default function DashboardPage() {
             ) : null}
 
             {analysisResponse?.status === "needs_mapping" ? (
-              <MappingForm response={analysisResponse} onSubmit={saveMapping} />
+              <div className="settings-only">
+                <MappingForm response={analysisResponse} onSubmit={saveMapping} />
+              </div>
             ) : null}
 
-            <section className="panel">
+            <section className="panel report-only">
               <div className="panel-header">
                 <h2>{t.reportCards}</h2>
                 <span className="status">{t.currentUpload}</span>
@@ -900,7 +997,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.automationCenter}</h2>
@@ -936,16 +1033,18 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <Charts
-              analysis={analysis}
-              formatMoney={money}
-              labels={{
-                revenueProfit: language === "tr" ? "Ciro ve Kar" : "Revenue and Profit",
-                costBreakdown: t.costBreakdown
-              }}
-            />
+            <div className="report-only">
+              <Charts
+                analysis={analysis}
+                formatMoney={money}
+                labels={{
+                  revenueProfit: language === "tr" ? "Ciro ve Kar" : "Revenue and Profit",
+                  costBreakdown: t.costBreakdown
+                }}
+              />
+            </div>
 
-            <section className="panel">
+            <section className="panel report-only">
               <div className="panel-header">
                 <h2>{t.products}</h2>
               </div>
@@ -966,7 +1065,7 @@ export default function DashboardPage() {
               />
             </section>
 
-            <section className="panel">
+            <section className="panel report-only">
               <div className="panel-header">
                 <h2>{t.reportDetails}</h2>
                 <span className="status">{analysis?.report_type || selectedReportType}</span>
@@ -976,14 +1075,14 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid">
-            <section className="panel">
+            <section className="panel report-only">
               <div className="panel-header">
                 <h2>{t.insights}</h2>
               </div>
               <Alerts insights={analysis?.insights || []} />
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.notificationCenter}</h2>
@@ -1003,7 +1102,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.planningCenter}</h2>
@@ -1026,7 +1125,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.competitorCenter}</h2>
@@ -1043,7 +1142,7 @@ export default function DashboardPage() {
               </p>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <h2>{t.uploads}</h2>
                 <UploadCloud size={18} />
@@ -1081,7 +1180,7 @@ export default function DashboardPage() {
               <p className="muted">{t.completedOnly}</p>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <h2>{language === "tr" ? "Aktif Rapor" : "Active Report"}</h2>
               </div>
@@ -1100,7 +1199,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.dashboardExports}</h2>
@@ -1115,7 +1214,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.rolesCenter}</h2>
@@ -1133,7 +1232,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel settings-only">
               <div className="panel-header">
                 <div>
                   <h2>{t.businessModels}</h2>
