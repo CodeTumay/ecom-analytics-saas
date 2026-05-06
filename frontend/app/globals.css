@@ -513,6 +513,100 @@ a {
   margin: 0;
 }
 
+.provider-grid,
+.forecast-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.provider-group {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.provider-group > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.provider-list,
+.roadmap-list,
+.scenario-list {
+  display: grid;
+  gap: 8px;
+}
+
+.provider-card,
+.roadmap-item,
+.scenario-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.provider-card.connected {
+  border-color: #8bc3ad;
+  background: #f0faf5;
+}
+
+.provider-card b,
+.roadmap-item strong,
+.scenario-item strong {
+  font-size: 13px;
+}
+
+.provider-card em,
+.provider-card small,
+.roadmap-item span,
+.scenario-item span {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.roadmap-item.critical {
+  border-left: 4px solid var(--danger);
+}
+
+.roadmap-item.warning {
+  border-left: 4px solid var(--warning);
+}
+
+.roadmap-list.compact .roadmap-item {
+  padding: 8px 10px;
+}
+
+.scenario-list {
+  margin-top: 12px;
+}
+
+.scenario-item {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-list span {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--brand-dark);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 10px;
+}
+
 .active-report-box {
   align-items: start;
   display: grid;
@@ -706,6 +800,8 @@ th {
   }
 
   .report-card-grid,
+  .provider-grid,
+  .forecast-grid,
   .schema-row {
     grid-template-columns: 1fr;
   }

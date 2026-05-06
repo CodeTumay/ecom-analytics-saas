@@ -97,6 +97,73 @@ export type DashboardResponse = {
   }>;
 };
 
+export type PlatformCatalog = {
+  providers: {
+    marketplaces: Array<{ id: string; label: string; pulls: string[]; frequency?: string }>;
+    accounting: Array<{ id: string; label: string; pulls: string[] }>;
+    shipping: Array<{ id: string; label: string; pulls: string[] }>;
+  };
+  dashboard_exports: string[];
+  alert_templates: Array<{ event: string; severity: string; message_tr: string }>;
+  roles: Array<{ id: string; label_tr: string; permissions: string[] }>;
+  business_models: Array<{ id: string; label_tr: string; price_tr: string }>;
+  forecast_modules: string[];
+  crm_modules: string[];
+  tax_modules: string[];
+};
+
+export type PlatformOverview = {
+  integrations: {
+    total: number;
+    connected: number;
+    by_category: Record<string, number>;
+  };
+  alerts: {
+    rules: number;
+    enabled: number;
+    channels: string[];
+  };
+  competitors: {
+    tracked: number;
+    needs_check: number;
+  };
+  scheduled_reports: {
+    total: number;
+    enabled: number;
+  };
+};
+
+export type PlanningSummary = {
+  sales_forecast: {
+    next_30_days: number;
+    next_60_days: number;
+    next_90_days: number;
+    method: string;
+  };
+  cash_projection: {
+    expected_income: number;
+    expected_outflow: number;
+    expected_profit: number;
+  };
+  scenarios: Array<{
+    id: string;
+    revenue: number;
+    cost: number;
+    ads_spend: number;
+    profit: number;
+    margin: number;
+  }>;
+};
+
+export type Integration = {
+  id: number;
+  category: string;
+  provider: string;
+  status: string;
+  sync_frequency: string;
+  last_sync_at?: string | null;
+};
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -141,6 +208,14 @@ export const api = {
     }),
 
   dashboard: (token: string) => request<DashboardResponse>("/dashboard", {}, token),
+
+  platformCatalog: (token: string) => request<PlatformCatalog>("/platform/catalog", {}, token),
+
+  platformOverview: (token: string) => request<PlatformOverview>("/platform/overview", {}, token),
+
+  planningSummary: (token: string) => request<PlanningSummary>("/planning/summary", {}, token),
+
+  integrations: (token: string) => request<Integration[]>("/integrations", {}, token),
 
   reportTypes: (token: string) =>
     request<{ reports: ReportDefinition[] }>("/report-types", {}, token),

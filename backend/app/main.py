@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import analysis, auth, dashboard, uploads
+from app.api.routes import analysis, auth, dashboard, platform, uploads
 from app.core.config import settings
 from app.db.session import init_db
 
@@ -28,6 +28,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/auth", tags=["auth"])
     app.include_router(uploads.router, tags=["uploads"])
     app.include_router(analysis.router, tags=["analysis"])
+    app.include_router(platform.router, tags=["platform"])
     app.include_router(dashboard.router, tags=["dashboard"])
 
     return app

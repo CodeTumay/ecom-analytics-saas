@@ -12,16 +12,23 @@ import { useLanguage } from "@/lib/i18n";
 import {
   AlertTriangle,
   BarChart3,
+  Bell,
   Boxes,
+  Brain,
   Calculator,
   CircleDollarSign,
   CreditCard,
+  FileText,
+  Link2,
   LineChart,
   LogOut,
   Megaphone,
   PackageSearch,
   Percent,
+  Radar,
   Receipt,
+  Send,
+  ShieldCheck,
   ShoppingCart,
   Truck,
   UploadCloud
@@ -101,6 +108,24 @@ const text = {
     shippingRatio: "Kargo/Ciro",
     commissionRatio: "Komisyon/Ciro",
     profitableProducts: "Karlı Ürün",
+    automationCenter: "Otomasyon Merkezi",
+    integrationsCenter: "Pazaryeri / muhasebe / kargo entegrasyonları",
+    notificationCenter: "Uyarı ve Bildirim Sistemi",
+    competitorCenter: "Rakip Takip Sistemi",
+    planningCenter: "Tahmin ve Planlama",
+    rolesCenter: "Çoklu Kullanıcı ve Yetkiler",
+    businessModels: "İş Modeli",
+    dashboardExports: "Dashboard ve Bildirim Kanalları",
+    connected: "bağlı",
+    configured: "kurulu",
+    tracked: "takipte",
+    enabled: "aktif",
+    forecast30: "30 gün tahmin",
+    forecast60: "60 gün tahmin",
+    forecast90: "90 gün tahmin",
+    expectedProfit: "Beklenen kar",
+    scenarioAnalysis: "Senaryo Analizi",
+    providerReady: "Adapter hazır; gerçek API için credential gerekir",
     canonical: {
       product_name: "Ürün adı",
       revenue: "Ciro/Satış",
@@ -178,6 +203,24 @@ const text = {
     shippingRatio: "Shipping/Revenue",
     commissionRatio: "Commission/Revenue",
     profitableProducts: "Profitable Products",
+    automationCenter: "Automation Center",
+    integrationsCenter: "Marketplace / accounting / shipping integrations",
+    notificationCenter: "Alert and Notification System",
+    competitorCenter: "Competitor Tracking",
+    planningCenter: "Forecasting and Planning",
+    rolesCenter: "Multi-user Roles",
+    businessModels: "Business Model",
+    dashboardExports: "Dashboard and Notification Channels",
+    connected: "connected",
+    configured: "configured",
+    tracked: "tracked",
+    enabled: "enabled",
+    forecast30: "30-day forecast",
+    forecast60: "60-day forecast",
+    forecast90: "90-day forecast",
+    expectedProfit: "Expected profit",
+    scenarioAnalysis: "Scenario Analysis",
+    providerReady: "Adapter ready; real API credentials required",
     canonical: {
       product_name: "Product name",
       revenue: "Revenue/Sales",
@@ -291,6 +334,10 @@ export default function DashboardPage() {
   const t = text[language];
   const [token, setToken] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<Awaited<ReturnType<typeof api.dashboard>>>();
+  const [platformCatalog, setPlatformCatalog] = useState<Awaited<ReturnType<typeof api.platformCatalog>>>();
+  const [platformOverview, setPlatformOverview] = useState<Awaited<ReturnType<typeof api.platformOverview>>>();
+  const [planningSummary, setPlanningSummary] = useState<Awaited<ReturnType<typeof api.planningSummary>>>();
+  const [integrations, setIntegrations] = useState<Awaited<ReturnType<typeof api.integrations>>>([]);
   const [reportTypes, setReportTypes] = useState<ReportDefinition[]>([]);
   const [selectedReportType, setSelectedReportType] = useState("profitability");
   const [analysisResponse, setAnalysisResponse] = useState<AnalysisResponse>();
@@ -316,6 +363,11 @@ export default function DashboardPage() {
   const averageOrderProfit = analysis?.orders?.length
     ? (totals?.profit || 0) / analysis.orders.length
     : 0;
+  const connectedProviders = new Set(
+    integrations
+      .filter((integration) => integration.status === "connected")
+      .map((integration) => `${integration.category}:${integration.provider}`)
+  );
 
   const uploadStatus = useMemo(() => {
     if (!analysisResponse) return "";
@@ -408,6 +460,19 @@ export default function DashboardPage() {
     }
   }
 
+  async function loadPlatform(activeToken: string) {
+    const [catalog, overview, planning, integrationList] = await Promise.all([
+      api.platformCatalog(activeToken),
+      api.platformOverview(activeToken),
+      api.planningSummary(activeToken),
+      api.integrations(activeToken)
+    ]);
+    setPlatformCatalog(catalog);
+    setPlatformOverview(overview);
+    setPlanningSummary(planning);
+    setIntegrations(integrationList);
+  }
+
   async function pollAnalysis(activeToken: string, uploadId: number) {
     for (let attempt = 0; attempt < 60; attempt += 1) {
       const response = await api.analysis(activeToken, uploadId);
@@ -427,6 +492,7 @@ export default function DashboardPage() {
     }
     setToken(stored);
     loadReportTypes(stored).catch(() => undefined);
+    loadPlatform(stored).catch(() => undefined);
     loadDashboard(stored).catch((err) => {
       setError(err instanceof Error ? err.message : "Could not load dashboard");
       if (err instanceof Error && err.message.includes("validate credentials")) {
@@ -693,6 +759,42 @@ export default function DashboardPage() {
               </div>
             </section>
 
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>{t.automationCenter}</h2>
+                  <p className="panel-subtitle">{t.integrationsCenter}</p>
+                </div>
+                <Link2 size={18} />
+              </div>
+              <div className="provider-grid">
+                {[
+                  { category: "marketplace", title: "Pazaryeri", items: platformCatalog?.providers.marketplaces || [] },
+                  { category: "accounting", title: "Muhasebe", items: platformCatalog?.providers.accounting || [] },
+                  { category: "shipping", title: "Kargo", items: platformCatalog?.providers.shipping || [] }
+                ].map((group) => (
+                  <div className="provider-group" key={group.category}>
+                    <strong>{group.title}</strong>
+                    <span>
+                      {platformOverview?.integrations.by_category?.[group.category] || 0} {t.configured}
+                    </span>
+                    <div className="provider-list">
+                      {group.items.map((provider) => {
+                        const connected = connectedProviders.has(`${group.category}:${provider.id}`);
+                        return (
+                          <div className={connected ? "provider-card connected" : "provider-card"} key={provider.id}>
+                            <b>{provider.label}</b>
+                            <em>{connected ? t.connected : t.providerReady}</em>
+                            <small>{provider.pulls.join(", ")}</small>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <Charts
               analysis={analysis}
               labels={{
@@ -736,6 +838,66 @@ export default function DashboardPage() {
                 <h2>{t.insights}</h2>
               </div>
               <Alerts insights={analysis?.insights || []} />
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>{t.notificationCenter}</h2>
+                  <p className="panel-subtitle">
+                    {platformOverview?.alerts.enabled || 0} {t.enabled}
+                  </p>
+                </div>
+                <Bell size={18} />
+              </div>
+              <div className="roadmap-list">
+                {(platformCatalog?.alert_templates || []).map((alert) => (
+                  <div className={`roadmap-item ${alert.severity}`} key={alert.event}>
+                    <strong>{alert.event}</strong>
+                    <span>{language === "tr" ? alert.message_tr : alert.message_tr}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>{t.planningCenter}</h2>
+                  <p className="panel-subtitle">{t.scenarioAnalysis}</p>
+                </div>
+                <Brain size={18} />
+              </div>
+              <div className="forecast-grid">
+                <StatCard label={t.forecast30} value={money.format(planningSummary?.sales_forecast.next_30_days || 0)} />
+                <StatCard label={t.forecast60} value={money.format(planningSummary?.sales_forecast.next_60_days || 0)} />
+                <StatCard label={t.forecast90} value={money.format(planningSummary?.sales_forecast.next_90_days || 0)} />
+              </div>
+              <div className="scenario-list">
+                {(planningSummary?.scenarios || []).map((scenario) => (
+                  <div className="scenario-item" key={scenario.id}>
+                    <strong>{scenario.id}</strong>
+                    <span>{money.format(scenario.profit)} / {scenario.margin}%</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>{t.competitorCenter}</h2>
+                  <p className="panel-subtitle">
+                    {platformOverview?.competitors.tracked || 0} {t.tracked}
+                  </p>
+                </div>
+                <Radar size={18} />
+              </div>
+              <p className="muted">
+                {language === "tr"
+                  ? "Rakip fiyat, stok ve kampanya takip kayıtları API üzerinden yönetilir; scraping işi güvenli adapter ile sıraya alınır."
+                  : "Competitor price, stock, and campaign watches are managed through the API; scraping is queued through a safe adapter."}
+              </p>
             </section>
 
             <section className="panel">
@@ -792,6 +954,57 @@ export default function DashboardPage() {
                     ? "Bu başlığın metrikleri ana dashboard içinde gösteriliyor. Detay sayfaları sonraki modül olarak ayrılabilir."
                     : "This report's metrics are shown in the main dashboard. Dedicated drill-down pages can be split out next."}
                 </p>
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>{t.dashboardExports}</h2>
+                  <p className="panel-subtitle">Power BI, Tableau, Excel, Mail, WhatsApp, Telegram</p>
+                </div>
+                <Send size={18} />
+              </div>
+              <div className="chip-list">
+                {(platformCatalog?.dashboard_exports || []).map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>{t.rolesCenter}</h2>
+                  <p className="panel-subtitle">Admin, finans, pazarlama, operasyon, salt okunur</p>
+                </div>
+                <ShieldCheck size={18} />
+              </div>
+              <div className="roadmap-list compact">
+                {(platformCatalog?.roles || []).map((role) => (
+                  <div className="roadmap-item" key={role.id}>
+                    <strong>{role.label_tr}</strong>
+                    <span>{role.permissions.join(", ")}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>{t.businessModels}</h2>
+                  <p className="panel-subtitle">Excel, SaaS, hibrit ve danışmanlık paketleri</p>
+                </div>
+                <FileText size={18} />
+              </div>
+              <div className="roadmap-list compact">
+                {(platformCatalog?.business_models || []).map((model) => (
+                  <div className="roadmap-item" key={model.id}>
+                    <strong>{model.label_tr}</strong>
+                    <span>{model.price_tr}</span>
+                  </div>
+                ))}
               </div>
             </section>
           </div>
