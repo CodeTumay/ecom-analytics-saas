@@ -4,10 +4,56 @@ import pandas as pd
 NUMERIC_FIELDS = ["revenue", "cost", "commission", "shipping", "ads_spend"]
 
 
+def _normalize_number(value: object) -> float:
+    if value is None or pd.isna(value):
+        return 0
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    text = str(value).strip().upper()
+    if not text:
+        return 0
+
+    negative = text.startswith("(") and text.endswith(")")
+    text = text.strip("()")
+    text = (
+        text.replace("\u00a0", "")
+        .replace(" ", "")
+        .replace("TRY", "")
+        .replace("TL", "")
+        .replace("$", "")
+        .replace("\u20ac", "")
+        .replace("\u20ba", "")
+        .replace("%", "")
+    )
+
+    if "," in text and "." in text:
+        if text.rfind(",") > text.rfind("."):
+            text = text.replace(".", "").replace(",", ".")
+        else:
+            text = text.replace(",", "")
+    elif "," in text:
+        parts = text.split(",")
+        if len(parts[-1]) in {1, 2}:
+            text = "".join(parts[:-1]).replace(".", "") + "." + parts[-1]
+        else:
+            text = text.replace(",", "")
+    elif "." in text:
+        parts = text.split(".")
+        if len(parts) > 2 and len(parts[-1]) == 3:
+            text = text.replace(".", "")
+
+    try:
+        number = float(text)
+    except ValueError:
+        return 0
+    return -number if negative else number
+
+
 def _series_or_zero(df: pd.DataFrame, column: str | None) -> pd.Series:
     if not column:
         return pd.Series([0] * len(df), index=df.index, dtype="float64")
-    return pd.to_numeric(df[column], errors="coerce").fillna(0)
+    return df[column].map(_normalize_number).astype("float64")
 
 
 def build_profitability_frame(df: pd.DataFrame, mapping: dict[str, str]) -> pd.DataFrame:
