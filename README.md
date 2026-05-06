@@ -25,7 +25,9 @@ A compact SaaS starter for marketplace profitability analytics. Users upload Tre
 │   ├── lib/api.ts               # API client and shared types
 │   └── Dockerfile
 ├── docker-compose.yml
+├── docker-compose.prod.yml
 ├── .env.example
+├── .env.production.example
 └── storage/uploads/
 ```
 
@@ -49,21 +51,12 @@ The processing path is separate from API code:
 
 ## Run With Docker
 
-1. Copy environment defaults:
-
 ```bash
 cp .env.example .env
-```
-
-2. Edit `.env` and set a strong `JWT_SECRET`.
-
-3. Start the stack:
-
-```bash
 docker compose up --build
 ```
 
-4. Open:
+Open:
 
 - Frontend: http://localhost:3000
 - Backend health: http://localhost:8000/health
