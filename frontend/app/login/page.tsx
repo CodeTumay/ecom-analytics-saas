@@ -13,8 +13,8 @@ export default function LoginPage() {
   const { language, setLanguage } = useLanguage();
   const t = {
     tr: {
-      title: "E-commerce Analytics",
-      subtitle: "Çalışma alanına giriş yap",
+      title: "JewelPilot",
+      subtitle: "Accessory Retail Copilot çalışma alanına giriş yap",
       email: "E-posta",
       password: "Şifre",
       submit: "Giriş yap",
@@ -23,8 +23,8 @@ export default function LoginPage() {
       error: "Giriş başarısız"
     },
     en: {
-      title: "E-commerce Analytics",
-      subtitle: "Sign in to your workspace",
+      title: "JewelPilot",
+      subtitle: "Sign in to your Accessory Retail Copilot workspace",
       email: "Email",
       password: "Password",
       submit: "Sign in",
@@ -57,7 +57,7 @@ export default function LoginPage() {
     <main className="auth-shell">
       <section className="auth-panel">
         <div className="brand">
-          <BarChart3 size={30} color="#227c5c" />
+          <BarChart3 size={30} color="#000000" />
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>

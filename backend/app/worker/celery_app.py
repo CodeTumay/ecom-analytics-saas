@@ -3,7 +3,7 @@ from celery import Celery
 from app.core.config import settings
 
 celery_app = Celery(
-    "ecommerce_analytics",
+    "jewelpilot",
     broker=settings.broker_url,
     backend=settings.result_backend,
     include=["app.worker.tasks"],

@@ -13,8 +13,8 @@ export default function RegisterPage() {
   const { language, setLanguage } = useLanguage();
   const t = {
     tr: {
-      title: "Çalışma alanı oluştur",
-      subtitle: "Ücretsiz plan ayda 1 yükleme içerir",
+      title: "JewelPilot çalışma alanı oluştur",
+      subtitle: "Retail Health Audit için satış, stok ve koleksiyon verilerini yükle",
       email: "E-posta",
       password: "Şifre",
       submit: "Hesap oluştur",
@@ -23,8 +23,8 @@ export default function RegisterPage() {
       error: "Kayıt başarısız"
     },
     en: {
-      title: "Create workspace",
-      subtitle: "Free plan includes 1 upload per month",
+      title: "Create JewelPilot workspace",
+      subtitle: "Upload sales, inventory, and collection data for a Retail Health Audit",
       email: "Email",
       password: "Password",
       submit: "Create account",
@@ -58,7 +58,7 @@ export default function RegisterPage() {
     <main className="auth-shell">
       <section className="auth-panel">
         <div className="brand">
-          <BarChart3 size={30} color="#227c5c" />
+          <BarChart3 size={30} color="#000000" />
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>

@@ -26,9 +26,9 @@ def build_analysis(order_frame: pd.DataFrame, product_frame: pd.DataFrame) -> di
 
     cost_breakdown = [
         {"name": "Product cost", "value": totals["cost"]},
-        {"name": "Commission", "value": totals["commission"]},
-        {"name": "Shipping", "value": totals["shipping"]},
-        {"name": "Ads", "value": totals["ads_spend"]},
+        {"name": "Store area signal", "value": totals["commission"]},
+        {"name": "Stock signal", "value": totals["shipping"]},
+        {"name": "Inventory value", "value": totals["ads_spend"]},
     ]
 
     revenue_trends = (

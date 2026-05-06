@@ -30,7 +30,7 @@ export function FileUpload({
   return (
     <div className="upload-box">
       <div className="upload-copy">
-        <strong>{fileName || labels?.title || "Marketplace export"}</strong>
+        <strong>{fileName || labels?.title || "Retail Health data file"}</strong>
         <span>{labels?.subtitle || "CSV or Excel"}</span>
       </div>
       <input

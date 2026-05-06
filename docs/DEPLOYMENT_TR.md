@@ -76,7 +76,7 @@ nano .env.production
 ```env
 JWT_SECRET=openssl-ile-urettigin-secret
 POSTGRES_PASSWORD=guclu-db-sifresi
-DATABASE_URL=postgresql+psycopg://analytics:guclu-db-sifresi@postgres:5432/ecommerce_analytics
+DATABASE_URL=postgresql+psycopg://analytics:guclu-db-sifresi@postgres:5432/jewelpilot
 NEXT_PUBLIC_API_URL=https://analytics-api.droopshipping.com.tr
 CORS_ORIGINS=https://analytics.droopshipping.com.tr
 ```

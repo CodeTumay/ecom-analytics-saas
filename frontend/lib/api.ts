@@ -99,9 +99,8 @@ export type DashboardResponse = {
 
 export type PlatformCatalog = {
   providers: {
-    marketplaces: Array<{ id: string; label: string; pulls: string[]; frequency?: string }>;
+    data_sources: Array<{ id: string; label: string; pulls: string[]; frequency?: string }>;
     accounting: Array<{ id: string; label: string; pulls: string[] }>;
-    shipping: Array<{ id: string; label: string; pulls: string[] }>;
   };
   dashboard_exports: string[];
   alert_templates: Array<{ event: string; severity: string; message_tr: string }>;
@@ -163,17 +162,6 @@ export type Integration = {
   sync_frequency: string;
   config?: Record<string, string> | null;
   last_sync_at?: string | null;
-};
-
-export type TrendyolOrderImportPayload = {
-  seller_id?: string;
-  api_key?: string;
-  api_secret?: string;
-  start_date?: number;
-  end_date?: number;
-  status?: string;
-  page?: number;
-  size?: number;
 };
 
 async function request<T>(
@@ -243,20 +231,10 @@ export const api = {
       body: JSON.stringify(payload)
     }, token),
 
-  importTrendyolOrders: (token: string, payload: TrendyolOrderImportPayload) =>
-    request<{ upload_id: number; status: string; imported_rows: number; message: string }>(
-      "/integrations/trendyol/import-orders",
-      {
-        method: "POST",
-        body: JSON.stringify(payload)
-      },
-      token
-    ),
-
   reportTypes: (token: string) =>
     request<{ reports: ReportDefinition[] }>("/report-types", {}, token),
 
-  upload: (token: string, file: File, reportType = "profitability") => {
+  upload: (token: string, file: File, reportType = "retail_health") => {
     const form = new FormData();
     form.append("file", file);
     form.append("report_type", reportType);

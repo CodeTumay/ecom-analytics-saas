@@ -49,7 +49,7 @@ def dashboard(
                 "id": upload.id,
                 "filename": upload.original_filename,
                 "status": upload.status,
-                "report_type": (upload.mapping or {}).get("__report_type", "profitability"),
+                "report_type": (upload.mapping or {}).get("__report_type", "retail_health"),
                 "created_at": upload.created_at,
             }
             for upload in recent_uploads

@@ -20,24 +20,6 @@ class IntegrationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class TrendyolOrderImportRequest(BaseModel):
-    seller_id: str | None = None
-    api_key: str | None = None
-    api_secret: str | None = None
-    start_date: int | None = None
-    end_date: int | None = None
-    status: str | None = None
-    page: int = 0
-    size: int = Field(default=200, le=200, ge=1)
-
-
-class TrendyolOrderImportOut(BaseModel):
-    upload_id: int
-    status: str
-    imported_rows: int
-    message: str
-
-
 class NotificationRuleCreate(BaseModel):
     event: str
     channel: str = "email"

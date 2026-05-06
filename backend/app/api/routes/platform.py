@@ -5,7 +5,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.core.config import settings
 from app.db.session import get_db
 from app.models import (
     CompetitorWatch,
@@ -14,7 +13,6 @@ from app.models import (
     Product,
     ScheduledReport,
     Upload,
-    UploadStatus,
     User,
 )
 from app.schemas.platform import (
@@ -26,18 +24,8 @@ from app.schemas.platform import (
     NotificationRuleOut,
     ScheduledReportCreate,
     ScheduledReportOut,
-    TrendyolOrderImportOut,
-    TrendyolOrderImportRequest,
 )
 from app.services.platform_catalog import platform_catalog
-from app.services.trendyol import (
-    TrendyolApiError,
-    TrendyolCredentials,
-    fetch_shipment_packages,
-    packages_to_profitability_rows,
-    write_profitability_csv,
-)
-from app.worker.tasks import process_upload
 
 router = APIRouter()
 
@@ -71,7 +59,7 @@ def platform_overview(
             "connected": len([item for item in integrations if item.status == "connected"]),
             "by_category": {
                 category: len([item for item in integrations if item.category == category])
-                for category in ["marketplace", "accounting", "shipping"]
+                for category in ["data_source", "accounting"]
             },
         },
         "alerts": {
@@ -159,58 +147,8 @@ def sync_integration(
         "provider": integration.provider,
         "category": integration.category,
         "datasets": _datasets_for_category(integration.category),
-        "message": "Real provider adapter is ready to be wired with API credentials.",
+        "message": "Retail data source adapter is ready to be wired with API credentials.",
     }
-
-
-@router.post("/integrations/trendyol/import-orders", response_model=TrendyolOrderImportOut)
-def import_trendyol_orders(
-    payload: TrendyolOrderImportRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> TrendyolOrderImportOut:
-    credentials = _trendyol_credentials_from_payload(payload, db, current_user.id)
-    try:
-        response = fetch_shipment_packages(
-            credentials,
-            start_date=payload.start_date,
-            end_date=payload.end_date,
-            page=payload.page,
-            size=payload.size,
-            status=payload.status,
-        )
-    except TrendyolApiError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    rows = packages_to_profitability_rows(response)
-    if not rows:
-        raise HTTPException(
-            status_code=400,
-            detail="Trendyol returned no order lines for this filter",
-        )
-
-    timestamp = int(datetime.now(timezone.utc).timestamp())
-    filename = f"trendyol-orders-user-{current_user.id}-{timestamp}.csv"
-    file_path = settings.storage_dir / filename
-    write_profitability_csv(rows, file_path)
-
-    upload = Upload(
-        user_id=current_user.id,
-        file_path=str(file_path),
-        original_filename=filename,
-        status=UploadStatus.QUEUED,
-        mapping={"__report_type": "profitability"},
-    )
-    db.add(upload)
-    db.commit()
-    db.refresh(upload)
-    process_upload.delay(upload.id, upload.mapping, "profitability")
-
-    return TrendyolOrderImportOut(
-        upload_id=upload.id,
-        status=upload.status,
-        imported_rows=len(rows),
-        message="Trendyol orders queued for profitability analysis",
-    )
 
 
 @router.get("/notification-rules", response_model=list[NotificationRuleOut])
@@ -329,26 +267,27 @@ def planning_summary(
 
     monthly_revenue = float(totals[0] or 0)
     monthly_cost = float(totals[1] or 0)
-    monthly_ads = float(totals[2] or 0)
+    inventory_buffer = float(totals[2] or 0)
     monthly_profit = float(totals[3] or 0)
     daily_revenue = monthly_revenue / 30 if monthly_revenue else 0
 
     return {
-        "sales_forecast": {
+        "retail_forecast": {
             "next_30_days": round(daily_revenue * 30, 2),
             "next_60_days": round(daily_revenue * 60, 2),
             "next_90_days": round(daily_revenue * 90, 2),
             "method": "baseline_daily_average",
         },
-        "cash_projection": {
-            "expected_income": round(monthly_revenue, 2),
-            "expected_outflow": round(monthly_cost + monthly_ads, 2),
+        "stock_cash_projection": {
+            "expected_revenue": round(monthly_revenue, 2),
+            "expected_product_cost": round(monthly_cost, 2),
+            "inventory_buffer": round(inventory_buffer, 2),
             "expected_profit": round(monthly_profit, 2),
         },
         "scenarios": [
-            _scenario("price_down_10", monthly_revenue * 0.9, monthly_cost, monthly_ads),
-            _scenario("ads_double", monthly_revenue * 1.15, monthly_cost, monthly_ads * 2),
-            _scenario("remove_loss_products", monthly_revenue * 0.92, monthly_cost * 0.85, monthly_ads * 0.9),
+            _scenario("markdown_slow_stock_10", monthly_revenue * 0.95, monthly_cost, inventory_buffer * 0.8),
+            _scenario("reorder_hero_products", monthly_revenue * 1.15, monthly_cost * 1.08, inventory_buffer),
+            _scenario("transfer_dead_stock", monthly_revenue * 1.08, monthly_cost * 0.96, inventory_buffer * 0.7),
         ],
     }
 
@@ -378,54 +317,20 @@ def _serialize_integration(integration: Integration) -> dict:
     }
 
 
-def _trendyol_credentials_from_payload(
-    payload: TrendyolOrderImportRequest,
-    db: Session,
-    user_id: int,
-) -> TrendyolCredentials:
-    if payload.seller_id and payload.api_key and payload.api_secret:
-        return TrendyolCredentials(
-            seller_id=payload.seller_id,
-            api_key=payload.api_key,
-            api_secret=payload.api_secret,
-        )
-
-    integration = db.scalar(
-        select(Integration).where(
-            Integration.user_id == user_id,
-            Integration.category == "marketplace",
-            Integration.provider == "trendyol",
-        )
-    )
-    config = integration.config if integration else None
-    if not config:
-        raise HTTPException(status_code=400, detail="Trendyol API connection is not configured")
-
-    try:
-        return TrendyolCredentials(
-            seller_id=str(config["seller_id"]),
-            api_key=str(config["api_key"]),
-            api_secret=str(config["api_secret"]),
-        )
-    except KeyError as exc:
-        raise HTTPException(status_code=400, detail="Trendyol API connection is incomplete") from exc
-
-
 def _datasets_for_category(category: str) -> list[str]:
     return {
-        "marketplace": ["orders", "stock", "invoices"],
+        "data_source": ["sales", "inventory", "products", "stores", "costs"],
         "accounting": ["ledger", "e_invoice", "expenses"],
-        "shipping": ["shipping_cost", "delivery_status", "delivery_time"],
     }.get(category, ["dataset"])
 
 
-def _scenario(name: str, revenue: float, cost: float, ads: float) -> dict:
-    profit = revenue - cost - ads
+def _scenario(name: str, revenue: float, cost: float, inventory_buffer: float) -> dict:
+    profit = revenue - cost
     return {
         "id": name,
         "revenue": round(revenue, 2),
         "cost": round(cost, 2),
-        "ads_spend": round(ads, 2),
+        "inventory_buffer": round(inventory_buffer, 2),
         "profit": round(profit, 2),
         "margin": round((profit / revenue * 100) if revenue else 0, 2),
     }

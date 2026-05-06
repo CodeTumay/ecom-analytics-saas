@@ -32,7 +32,7 @@ def get_analysis(
     return AnalysisOut(
         upload_id=upload.id,
         status=upload.status,
-        report_type=(upload.mapping or {}).get("__report_type", "profitability"),
+        report_type=(upload.mapping or {}).get("__report_type", "retail_health"),
         mapping=upload.mapping,
         analysis=upload.analysis,
         error_message=upload.error_message,
@@ -138,15 +138,15 @@ def combined_report(
         ],
         "cost_breakdown": [
             {"name": "Product cost", "value": rounded_totals["cost"]},
-            {"name": "Commission", "value": rounded_totals["commission"]},
-            {"name": "Shipping", "value": rounded_totals["shipping"]},
-            {"name": "Ads", "value": rounded_totals["ads_spend"]},
+            {"name": "Store area signal", "value": rounded_totals["commission"]},
+            {"name": "Stock signal", "value": rounded_totals["shipping"]},
+            {"name": "Inventory value", "value": rounded_totals["ads_spend"]},
         ],
         "included_reports": [
             {
                 "id": upload.id,
                 "filename": upload.original_filename,
-                "report_type": (upload.mapping or {}).get("__report_type", "profitability"),
+                "report_type": (upload.mapping or {}).get("__report_type", "retail_health"),
                 "totals": (upload.analysis or {}).get("totals", {}),
             }
             for upload in uploads
@@ -154,7 +154,7 @@ def combined_report(
         "detail_rows": [
             {
                 "filename": upload.original_filename,
-                "report_type": (upload.mapping or {}).get("__report_type", "profitability"),
+                "report_type": (upload.mapping or {}).get("__report_type", "retail_health"),
                 "revenue": round(float((upload.analysis or {}).get("totals", {}).get("revenue", 0) or 0), 2),
                 "cost": round(float((upload.analysis or {}).get("totals", {}).get("cost", 0) or 0), 2),
                 "profit": round(float((upload.analysis or {}).get("totals", {}).get("profit", 0) or 0), 2),

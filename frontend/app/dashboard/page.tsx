@@ -47,19 +47,22 @@ const percent = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0
 });
 
-const marketplaceConnections = [
-  { id: "trendyol", label: "Trendyol", fields: ["seller_id", "api_key", "api_secret"] },
-  { id: "hepsiburada", label: "Hepsiburada", fields: ["merchant_id", "api_key", "api_secret"] },
-  { id: "gittigidiyor", label: "GittiGidiyor", fields: ["api_key", "api_secret", "role_name"] },
-  { id: "amazon_tr", label: "Amazon TR", fields: ["seller_id", "client_id", "client_secret"] },
-  { id: "n11", label: "N11", fields: ["api_key", "api_secret"] }
+const dataSourceConnections = [
+  { id: "shopify", label: "Shopify", fields: ["store_url", "access_token"] },
+  { id: "woocommerce", label: "WooCommerce", fields: ["store_url", "consumer_key", "consumer_secret"] },
+  { id: "ikas", label: "ikas", fields: ["store_id", "api_key"] },
+  { id: "ticimax", label: "Ticimax", fields: ["service_url", "api_key"] },
+  { id: "nebim", label: "Nebim V3", fields: ["company_code", "api_user"] },
+  { id: "logo", label: "Logo", fields: ["company_code", "api_user"] },
+  { id: "mikro", label: "Mikro", fields: ["company_code", "api_user"] },
+  { id: "parasut", label: "Paraşüt", fields: ["client_id", "client_secret"] }
 ] as const;
 
 const text = {
   tr: {
-    app: "Ecom Analytics",
+    app: "JewelPilot",
     plan: "plan",
-    title: "E-ticaret Karlılık Merkezi",
+    title: "Accessory Retail Copilot",
     ready: "Hazır",
     completed: "Tamamlandı",
     needsMapping: "Kolon eşleştirme gerekli",
@@ -74,29 +77,22 @@ const text = {
     uploadsThisMonth: "bu ay yükleme",
     revenue: "Ciro",
     profit: "Net Kar",
-    adsSpend: "Reklam Harcaması",
+    adsSpend: "Nakit Bağlayan Stok",
     margin: "Kar Marjı",
-    totalCosts: "Toplam Gider",
+    totalCosts: "Ürün Maliyeti",
     contribution: "Katkı Karı",
     lossProducts: "Zarardaki Ürün",
-    averageOrderProfit: "Ortalama Sipariş Karı",
+    averageOrderProfit: "Satır Başı Kar",
     upload: "Dosya Yükle",
     dataSources: "Veri kaynakları",
     apiConnections: "API Bağlantıları",
-    apiConnectionsHelp: "Pazaryeri API bilgilerini bir kez kaydet; sonrasında siparişleri tek tuşla çek.",
+    apiConnectionsHelp: "İlk sürüm Excel/CSV retail health raporu üretir; entegrasyonlar daha sonra veri kaynağı olarak bağlanır.",
     manualUpload: "Manuel dosya yükleme",
     saveConnection: "Bağlantıyı kaydet",
     savedConnection: "Bağlantı kayıtlı",
     noConnection: "Bağlantı yok",
-    trendyolImport: "Trendyol siparişlerini çek",
-    trendyolHelp: "Kaydedilmiş Trendyol bağlantısıyla son siparişleri analize gönder.",
-    sellerId: "Satıcı ID",
-    apiKey: "API key",
-    apiSecret: "API secret",
-    syncDays: "Gün",
-    syncOrders: "Siparişleri çek",
-    uploadHelp: "Excel/CSV dosyanı yükle. Sistem ayraç, sayı formatı ve kolonları otomatik algılar.",
-    uploadGuide: "Otomatik Analiz İçin Başlıklar",
+    uploadHelp: "Satış, stok, maliyet, mağaza, koleksiyon ve ürün verini yükle. Sistem retail karar raporu üretir.",
+    uploadGuide: "Retail Health Template Alanları",
     sample: "Örnek CSV indir",
     required: "Zorunlu",
     optional: "Opsiyonel",
@@ -109,12 +105,12 @@ const text = {
     insights: "AI İçgörüler",
     uploads: "Yüklemeler",
     reports: "Raporlar",
-    reportMap: "E-ticaret Rapor Haritası",
-    reportMapHelp: "Sol menüde tüm ana rapor başlıkları yer alır; veri geldikçe ilgili raporlar otomatik dolar.",
-    financial: "Finansal Raporlar",
-    performance: "Performans Raporları",
-    operations: "Operasyon Raporları",
-    growth: "Büyüme ve Risk",
+    reportMap: "Accessory Retail Copilot",
+    reportMapHelp: "Mağaza, stok, koleksiyon ve yatırımcı kararlarını tek rapora çevirir.",
+    financial: "CEO",
+    performance: "Mağaza",
+    operations: "Ürün & Stok",
+    growth: "Board",
     available: "Aktif",
     planned: "Planlandı",
     noData: "Veri bekleniyor",
@@ -123,23 +119,23 @@ const text = {
     reportCards: "Kapsamlı Rapor Özeti",
     reportType: "Rapor tipi",
     selectReportType: "Yüklenecek rapor tipini seç",
-    combineReports: "Genel rapor oluştur",
+    combineReports: "Retail health raporu oluştur",
     selectedReports: "seçili rapor",
     generalReport: "Genel Birleşik Rapor",
     clearGeneralReport: "Genel raporu kapat",
     completedOnly: "Sadece tamamlanan raporlar seçilebilir",
-    costBreakdown: "Maliyet Kırılımı",
-    topProducts: "En Karlı Ürünler",
-    lossMakers: "Zarar Eden Ürünler",
-    adRatio: "Reklam/Ciro",
-    shippingRatio: "Kargo/Ciro",
-    commissionRatio: "Komisyon/Ciro",
-    profitableProducts: "Karlı Ürün",
-    automationCenter: "Otomasyon Merkezi",
-    integrationsCenter: "Pazaryeri / muhasebe / kargo entegrasyonları",
-    notificationCenter: "Uyarı ve Bildirim Sistemi",
-    competitorCenter: "Rakip Takip Sistemi",
-    planningCenter: "Tahmin ve Planlama",
+    costBreakdown: "Nakit Bağlayan Stok",
+    topProducts: "Hero Ürünler",
+    lossMakers: "Eritilecek Ürünler",
+    adRatio: "Stok/Ciro",
+    shippingRatio: "Sell-through",
+    commissionRatio: "Brüt Marj",
+    profitableProducts: "Hero SKU",
+    automationCenter: "Veri Kaynakları",
+    integrationsCenter: "CSV/Excel önce; Shopify, WooCommerce, ikas, Ticimax, Nebim, Logo, Mikro ve Paraşüt sonra.",
+    notificationCenter: "Retail Karar Uyarıları",
+    competitorCenter: "Benchmark Hazırlığı",
+    planningCenter: "Reorder ve Transfer Planı",
     rolesCenter: "Çoklu Kullanıcı ve Yetkiler",
     businessModels: "İş Modeli",
     dashboardExports: "Dashboard ve Bildirim Kanalları",
@@ -152,28 +148,28 @@ const text = {
     forecast90: "90 gün tahmin",
     expectedProfit: "Beklenen kar",
     scenarioAnalysis: "Senaryo Analizi",
-    providerReady: "Adapter hazır; gerçek API için credential gerekir",
+    providerReady: "Planlandı",
     canonical: {
       product_name: "Ürün adı",
       revenue: "Ciro/Satış",
       cost: "Ürün maliyeti",
-      commission: "Komisyon",
-      shipping: "Kargo",
-      ads_spend: "Reklam gideri"
+      commission: "Mağaza m²",
+      shipping: "Stok",
+      ads_spend: "Stok değeri"
     },
     aliases: {
       product_name: "Product, Product Name, Ürün Adı, SKU, Title, Item",
       revenue: "Revenue, Sales, Satış, Ciro, Gelir, Total, Price",
       cost: "Cost, COGS, Maliyet, Ürün Maliyeti, Buying Price",
-      commission: "Commission, Komisyon, Marketplace Fee, Referral Fee",
-      shipping: "Shipping, Kargo, Cargo, Delivery, Shipment",
-      ads_spend: "Ads, Ad Spend, Reklam, PPC, Marketing"
+      commission: "Store m2, Mağaza m², Metrekare",
+      shipping: "Stock, Stok, Inventory",
+      ads_spend: "Inventory Value, Stok Değeri"
     }
   },
   en: {
-    app: "Ecom Analytics",
+    app: "JewelPilot",
     plan: "plan",
-    title: "E-commerce Profit Center",
+    title: "Accessory Retail Copilot",
     ready: "Ready",
     completed: "Completed",
     needsMapping: "Column mapping required",
@@ -188,29 +184,22 @@ const text = {
     uploadsThisMonth: "uploads this month",
     revenue: "Revenue",
     profit: "Net Profit",
-    adsSpend: "Ads Spend",
+    adsSpend: "Cash in Inventory",
     margin: "Profit Margin",
-    totalCosts: "Total Costs",
+    totalCosts: "Product Cost",
     contribution: "Contribution Profit",
     lossProducts: "Loss Products",
-    averageOrderProfit: "Avg. Order Profit",
+    averageOrderProfit: "Profit per Row",
     upload: "Upload File",
     dataSources: "Data sources",
     apiConnections: "API Connections",
-    apiConnectionsHelp: "Save marketplace API credentials once, then sync orders with one click.",
+    apiConnectionsHelp: "MVP starts with CSV/Excel retail health reports; integrations become data sources later.",
     manualUpload: "Manual file upload",
     saveConnection: "Save connection",
     savedConnection: "Connection saved",
     noConnection: "No connection",
-    trendyolImport: "Sync Trendyol orders",
-    trendyolHelp: "Send recent orders to analysis with the saved Trendyol connection.",
-    sellerId: "Seller ID",
-    apiKey: "API key",
-    apiSecret: "API secret",
-    syncDays: "Days",
-    syncOrders: "Sync orders",
-    uploadHelp: "Upload Excel/CSV. The system auto-detects delimiter, number format, and columns.",
-    uploadGuide: "Headers for Automated Analysis",
+    uploadHelp: "Upload sales, inventory, cost, store, collection, and product data. The system returns a retail decision report.",
+    uploadGuide: "Retail Health Template Fields",
     sample: "Download sample CSV",
     required: "Required",
     optional: "Optional",
@@ -223,12 +212,12 @@ const text = {
     insights: "AI Insights",
     uploads: "Uploads",
     reports: "Reports",
-    reportMap: "E-commerce Report Map",
-    reportMapHelp: "The left menu lists all major report groups; reports populate automatically as data arrives.",
-    financial: "Financial Reports",
-    performance: "Performance Reports",
-    operations: "Operations Reports",
-    growth: "Growth and Risk",
+    reportMap: "Accessory Retail Copilot",
+    reportMapHelp: "Turns store, inventory, collection, and board decisions into one action report.",
+    financial: "CEO",
+    performance: "Store",
+    operations: "Product & Stock",
+    growth: "Board",
     available: "Active",
     planned: "Planned",
     noData: "Waiting for data",
@@ -237,23 +226,23 @@ const text = {
     reportCards: "Expanded Report Summary",
     reportType: "Report type",
     selectReportType: "Select report type before upload",
-    combineReports: "Build combined report",
+    combineReports: "Build retail health report",
     selectedReports: "selected reports",
     generalReport: "Combined General Report",
     clearGeneralReport: "Close combined report",
     completedOnly: "Only completed reports can be selected",
-    costBreakdown: "Cost Breakdown",
-    topProducts: "Top Profitable Products",
-    lossMakers: "Loss-making Products",
-    adRatio: "Ads/Revenue",
-    shippingRatio: "Shipping/Revenue",
-    commissionRatio: "Commission/Revenue",
-    profitableProducts: "Profitable Products",
-    automationCenter: "Automation Center",
-    integrationsCenter: "Marketplace / accounting / shipping integrations",
-    notificationCenter: "Alert and Notification System",
-    competitorCenter: "Competitor Tracking",
-    planningCenter: "Forecasting and Planning",
+    costBreakdown: "Cash in Inventory",
+    topProducts: "Hero Products",
+    lossMakers: "Markdown Products",
+    adRatio: "Stock/Revenue",
+    shippingRatio: "Sell-through",
+    commissionRatio: "Gross Margin",
+    profitableProducts: "Hero SKU",
+    automationCenter: "Data Sources",
+    integrationsCenter: "CSV/Excel first; Shopify, WooCommerce, ikas, Ticimax, Nebim, Logo, Mikro, and Paraşüt later.",
+    notificationCenter: "Retail Decision Alerts",
+    competitorCenter: "Benchmark Readiness",
+    planningCenter: "Reorder and Transfer Plan",
     rolesCenter: "Multi-user Roles",
     businessModels: "Business Model",
     dashboardExports: "Dashboard and Notification Channels",
@@ -266,22 +255,22 @@ const text = {
     forecast90: "90-day forecast",
     expectedProfit: "Expected profit",
     scenarioAnalysis: "Scenario Analysis",
-    providerReady: "Adapter ready; real API credentials required",
+    providerReady: "Planned",
     canonical: {
       product_name: "Product name",
       revenue: "Revenue/Sales",
       cost: "Product cost",
-      commission: "Commission",
-      shipping: "Shipping",
-      ads_spend: "Ads spend"
+      commission: "Store m²",
+      shipping: "Stock",
+      ads_spend: "Inventory value"
     },
     aliases: {
       product_name: "Product, Product Name, Ürün Adı, SKU, Title, Item",
       revenue: "Revenue, Sales, Satış, Ciro, Gelir, Total, Price",
       cost: "Cost, COGS, Maliyet, Ürün Maliyeti, Buying Price",
-      commission: "Commission, Komisyon, Marketplace Fee, Referral Fee",
-      shipping: "Shipping, Kargo, Cargo, Delivery, Shipment",
-      ads_spend: "Ads, Ad Spend, Reklam, PPC, Marketing"
+      commission: "Store m2, Mağaza m², Metrekare",
+      shipping: "Stock, Stok, Inventory",
+      ads_spend: "Inventory Value, Stok Değeri"
     }
   }
 } as const;
@@ -294,16 +283,20 @@ function ratio(part = 0, total = 0) {
   return total ? (part / total) * 100 : 0;
 }
 
+function sumDetail(rows: Analysis["detail_rows"] | undefined, key: string) {
+  return (rows || []).reduce((sum, row) => sum + Number(row[key] || 0), 0);
+}
+
 function sampleValue(key: string, index: number) {
   if (key.includes("date")) return index === 1 ? "01.01.2026" : "02.01.2026";
   if (key.includes("period") || key === "month") return index === 1 ? "Ocak 2026" : "Şubat 2026";
-  if (key.includes("product_name")) return index === 1 ? "Test Ürün" : "İkinci Ürün";
-  if (key.includes("campaign")) return index === 1 ? "Google Arama" : "Meta Remarketing";
-  if (key.includes("marketplace")) return index === 1 ? "Trendyol" : "Amazon";
-  if (key.includes("carrier")) return index === 1 ? "MNG" : "Yurtiçi";
+  if (key.includes("store")) return index === 1 ? "Nişantaşı" : "Galataport";
+  if (key.includes("product_name")) return index === 1 ? "Pearl Hoop Earrings" : "Natural Stone Bracelet";
+  if (key.includes("collection")) return index === 1 ? "Pearl Collection" : "Natural Stone";
+  if (key.includes("material")) return index === 1 ? "İnci" : "Doğal taş";
   if (key.includes("risk")) return index === 1 ? "Stok" : "Nakit";
-  if (key.includes("category")) return index === 1 ? "Elektronik" : "Operasyon";
-  if (key.includes("sku")) return index === 1 ? "SKU-001" : "SKU-002";
+  if (key.includes("category")) return index === 1 ? "Küpe" : "Bileklik";
+  if (key.includes("sku")) return index === 1 ? "JWL-001" : "JWL-002";
   if (key.includes("order")) return index === 1 ? "ORD-001" : "ORD-002";
   if (key.includes("rate") || key.includes("pct") || key.includes("ratio")) return index === 1 ? "15" : "8";
   if (key.includes("count") || key.includes("units") || key.includes("click") || key.includes("conversion")) return index === 1 ? "10" : "25";
@@ -318,9 +311,9 @@ function downloadSampleCsv(report?: ReportDefinition) {
         { key: "product_name" },
         { key: "revenue" },
         { key: "cost" },
-        { key: "commission" },
-        { key: "shipping" },
-        { key: "ads_spend" }
+        { key: "stock" },
+        { key: "collection" },
+        { key: "store_name" }
       ];
   const header = fields.map((field) => field.key).join(";");
   const rows = [
@@ -332,7 +325,7 @@ function downloadSampleCsv(report?: ReportDefinition) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${report?.id || "ecommerce"}-template.csv`;
+  anchor.download = `${report?.id || "retail-health"}-template.csv`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -385,18 +378,17 @@ export default function DashboardPage() {
   const [planningSummary, setPlanningSummary] = useState<Awaited<ReturnType<typeof api.planningSummary>>>();
   const [integrations, setIntegrations] = useState<Awaited<ReturnType<typeof api.integrations>>>([]);
   const [reportTypes, setReportTypes] = useState<ReportDefinition[]>([]);
-  const [selectedReportType, setSelectedReportType] = useState("profitability");
+  const [selectedReportType, setSelectedReportType] = useState("retail_health");
   const [analysisResponse, setAnalysisResponse] = useState<AnalysisResponse>();
   const [combinedAnalysis, setCombinedAnalysis] = useState<Analysis>();
   const [selectedUploadIds, setSelectedUploadIds] = useState<number[]>([]);
   const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("USD");
   const [usdToTry, setUsdToTry] = useState(DEFAULT_USD_TO_TRY);
   const [activeView, setActiveView] = useState<"report" | "settings">("report");
-  const [syncDays, setSyncDays] = useState("7");
   const [integrationForms, setIntegrationForms] = useState<Record<string, Record<string, string>>>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [activeReport, setActiveReport] = useState("profitability");
+  const [activeReport, setActiveReport] = useState("retail_health");
 
   const currentAnalysis = isFullAnalysis(analysisResponse?.analysis) ? analysisResponse.analysis : undefined;
   const analysis = combinedAnalysis || currentAnalysis;
@@ -409,6 +401,11 @@ export default function DashboardPage() {
     (totals?.commission || 0) +
     (totals?.shipping || 0) +
     (totals?.ads_spend || 0);
+  const inventoryValue = sumDetail(analysis?.detail_rows, "inventory_value");
+  const sellThrough =
+    analysis?.detail_rows?.length
+      ? sumDetail(analysis.detail_rows, "sell_through") / analysis.detail_rows.length
+      : 0;
   const profitableProducts = products.filter((product) => product.net_profit >= 0).length;
   const lossProducts = products.filter((product) => product.net_profit < 0).length;
   const averageOrderProfit = analysis?.orders?.length
@@ -434,25 +431,21 @@ export default function DashboardPage() {
   }, [analysisResponse, t]);
 
   const reportIconById = {
-    profitability: CircleDollarSign,
-    income_expense: Receipt,
-    pricing_analysis: Percent,
-    cash_flow: CreditCard,
-    sales_performance: ShoppingCart,
-    product_analysis: PackageSearch,
-    trends: LineChart,
-    commissions: Calculator,
-    shipping_logistics: Truck,
-    ads_performance: Megaphone,
-    risk_alerts: AlertTriangle
+    retail_health: CircleDollarSign,
+    ceo_dashboard: Receipt,
+    store_performance: ShoppingCart,
+    product_collection: PackageSearch,
+    reorder_transfer: Truck,
+    investor_board: FileText
   } as const;
   const categoryTitles = {
-    financial: t.financial,
-    performance: t.performance,
-    operations: t.operations,
-    growth: t.growth
+    ceo: t.financial,
+    store: t.performance,
+    product: t.operations,
+    action: t.planningCenter,
+    board: t.growth
   } as const;
-  const reportGroups = (["financial", "performance", "operations", "growth"] as const)
+  const reportGroups = (["ceo", "store", "product", "action", "board"] as const)
     .map((category) => ({
       title: categoryTitles[category],
       items: reportTypes
@@ -469,17 +462,17 @@ export default function DashboardPage() {
   const reportCards = [
     {
       title: t.costBreakdown,
-      value: money(totalCosts),
-      detail: `${t.commissionRatio}: ${percent.format(ratio(totals?.commission, totals?.revenue))}%`
+      value: money(inventoryValue || totalCosts),
+      detail: `${t.commissionRatio}: ${percent.format(totals?.margin || 0)}%`
     },
     {
-      title: language === "tr" ? "Reklam Verimliliği" : "Ad Efficiency",
-      value: `${percent.format(ratio(totals?.ads_spend, totals?.revenue))}%`,
+      title: language === "tr" ? "Stokta Bağlı Nakit" : "Cash in Stock",
+      value: `${percent.format(ratio(inventoryValue, totals?.revenue))}%`,
       detail: t.adRatio
     },
     {
-      title: language === "tr" ? "Kargo Yükü" : "Shipping Load",
-      value: `${percent.format(ratio(totals?.shipping, totals?.revenue))}%`,
+      title: language === "tr" ? "Sell-through" : "Sell-through",
+      value: `${percent.format(sellThrough)}%`,
       detail: t.shippingRatio
     },
     {
@@ -492,8 +485,8 @@ export default function DashboardPage() {
       value: money(averageOrderProfit),
       detail: analysis?.orders?.length
         ? language === "tr"
-          ? `${analysis.orders.length} sipariş`
-          : `${analysis.orders.length} orders`
+          ? `${analysis.orders.length} veri satırı`
+          : `${analysis.orders.length} data rows`
         : t.noData
     },
     {
@@ -631,13 +624,13 @@ export default function DashboardPage() {
     }));
   }
 
-  async function saveMarketplaceIntegration(provider: string) {
+  async function saveDataSourceIntegration(provider: string) {
     if (!token) return;
     setBusy(true);
     setError("");
     try {
       await api.saveIntegration(token, {
-        category: "marketplace",
+        category: "data_source",
         provider,
         sync_frequency: "hourly",
         config: integrationForms[provider] || {}
@@ -645,29 +638,6 @@ export default function DashboardPage() {
       await loadPlatform(token);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connection could not be saved");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function importTrendyolOrders() {
-    if (!token) return;
-    setBusy(true);
-    setError("");
-    try {
-      const days = Math.max(1, Number(syncDays) || 7);
-      const endDate = Date.now();
-      const startDate = endDate - days * 24 * 60 * 60 * 1000;
-      const upload = await api.importTrendyolOrders(token, {
-        start_date: startDate,
-        end_date: endDate,
-        size: 200
-      });
-      setCombinedAnalysis(undefined);
-      await pollAnalysis(token, upload.upload_id);
-      await loadDashboard(token);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Trendyol sync failed");
     } finally {
       setBusy(false);
     }
@@ -800,7 +770,7 @@ export default function DashboardPage() {
         <div className="grid stats extended-stats report-only">
           <StatCard label={t.revenue} value={money(totals?.revenue || 0)} />
           <StatCard label={t.profit} value={money(totals?.profit || 0)} negative={(totals?.profit || 0) < 0} />
-          <StatCard label={t.adsSpend} value={money(totals?.ads_spend || 0)} />
+          <StatCard label={t.adsSpend} value={money(inventoryValue || totals?.ads_spend || 0)} />
           <StatCard label={t.margin} value={`${analysis?.totals.margin ?? 0}%`} negative={(analysis?.totals.margin || 0) < 0} />
           <StatCard label={t.totalCosts} value={money(totalCosts)} />
           <StatCard label={t.lossProducts} value={String(lossProducts)} negative={lossProducts > 0} />
@@ -843,7 +813,7 @@ export default function DashboardPage() {
               <FileUpload
                 disabled={busy}
                 labels={{
-                  title: language === "tr" ? "Pazaryeri dışa aktarımı" : "Marketplace export",
+                  title: language === "tr" ? "Retail Health veri dosyası" : "Retail Health data file",
                   subtitle: "CSV / XLSX",
                   button: language === "tr" ? "Yükle" : "Upload"
                 }}
@@ -855,7 +825,7 @@ export default function DashboardPage() {
                   <p>{t.apiConnectionsHelp}</p>
                 </div>
                 <div className="connection-list">
-                  {marketplaceConnections.map((provider) => {
+                  {dataSourceConnections.map((provider) => {
                     const saved = integrationByProvider.get(provider.id);
                     return (
                       <div className="connection-card" key={provider.id}>
@@ -886,33 +856,11 @@ export default function DashboardPage() {
                             className="ghost-button"
                             disabled={busy}
                             type="button"
-                            onClick={() => saveMarketplaceIntegration(provider.id)}
+                            onClick={() => saveDataSourceIntegration(provider.id)}
                           >
                             <Save size={17} />
                             {t.saveConnection}
                           </button>
-                          {provider.id === "trendyol" ? (
-                            <>
-                              <label className="sync-days-field">
-                                <span>{t.syncDays}</span>
-                                <input
-                                  min="1"
-                                  type="number"
-                                  value={syncDays}
-                                  onChange={(event) => setSyncDays(event.target.value)}
-                                />
-                              </label>
-                              <button
-                                className="primary-button"
-                                disabled={busy || !saved}
-                                type="button"
-                                onClick={importTrendyolOrders}
-                              >
-                                <Play size={17} />
-                                {t.syncOrders}
-                              </button>
-                            </>
-                          ) : null}
                         </div>
                       </div>
                     );
@@ -1022,9 +970,7 @@ export default function DashboardPage() {
               </div>
               <div className="provider-grid">
                 {[
-                  { category: "marketplace", title: "Pazaryeri", items: platformCatalog?.providers.marketplaces || [] },
-                  { category: "accounting", title: "Muhasebe", items: platformCatalog?.providers.accounting || [] },
-                  { category: "shipping", title: "Kargo", items: platformCatalog?.providers.shipping || [] }
+                  { category: "data_source", title: language === "tr" ? "Veri kaynakları" : "Data sources", items: platformCatalog?.providers.data_sources || [] }
                 ].map((group) => (
                   <div className="provider-group" key={group.category}>
                     <strong>{group.title}</strong>
@@ -1069,9 +1015,6 @@ export default function DashboardPage() {
                   product: language === "tr" ? "Ürün" : "Product",
                   revenue: t.revenue,
                   cost: language === "tr" ? "Maliyet" : "Cost",
-                  commission: language === "tr" ? "Komisyon" : "Commission",
-                  shipping: language === "tr" ? "Kargo" : "Shipping",
-                  ads: language === "tr" ? "Reklam" : "Ads",
                   profit: t.profit,
                   margin: t.margin,
                   empty: language === "tr" ? "Henüz ürün yok" : "No products yet"
@@ -1175,7 +1118,7 @@ export default function DashboardPage() {
                       <span>{upload.filename}</span>
                     </label>
                     <button type="button" onClick={() => token && pollAnalysis(token, upload.id)}>
-                      <span className="status">{upload.report_type || "profitability"}</span>
+                      <span className="status">{upload.report_type || "retail_health"}</span>
                       <span className="status">{upload.status}</span>
                     </button>
                   </div>
@@ -1272,11 +1215,11 @@ export default function DashboardPage() {
           <BarChart3 size={20} />
           <span>{language === "tr" ? "Finans" : "Finance"}</span>
         </button>
-        <button type="button" onClick={() => setActiveReport("sales_performance")}>
+        <button type="button" onClick={() => setActiveReport("store_performance")}>
           <LineChart size={20} />
           <span>{language === "tr" ? "Performans" : "Performance"}</span>
         </button>
-        <button type="button" onClick={() => setActiveReport("shipping_logistics")}>
+        <button type="button" onClick={() => setActiveReport("reorder_transfer")}>
           <Truck size={20} />
           <span>{language === "tr" ? "Operasyon" : "Ops"}</span>
         </button>

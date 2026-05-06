@@ -10,9 +10,6 @@ export function ProductTable({
     product: string;
     revenue: string;
     cost: string;
-    commission: string;
-    shipping: string;
-    ads: string;
     profit: string;
     margin: string;
     empty: string;
@@ -30,9 +27,6 @@ export function ProductTable({
               <th>{labels?.product || "Product"}</th>
               <th>{labels?.revenue || "Revenue"}</th>
               <th>{labels?.cost || "Cost"}</th>
-              <th>{labels?.commission || "Commission"}</th>
-              <th>{labels?.shipping || "Shipping"}</th>
-              <th>{labels?.ads || "Ads"}</th>
               <th>{labels?.profit || "Profit"}</th>
               <th>{labels?.margin || "Margin"}</th>
             </tr>
@@ -43,9 +37,6 @@ export function ProductTable({
                 <td>{product.product_name}</td>
                 <td>{money(product.revenue)}</td>
                 <td>{money(product.cost)}</td>
-                <td>{money(product.commission)}</td>
-                <td>{money(product.shipping)}</td>
-                <td>{money(product.ads_spend)}</td>
                 <td className={product.net_profit >= 0 ? "money-positive" : "money-negative"}>
                   {money(product.net_profit)}
                 </td>
@@ -54,7 +45,7 @@ export function ProductTable({
             ))}
             {products.length === 0 ? (
               <tr>
-                <td colSpan={8} className="muted">{labels?.empty || "No products yet"}</td>
+                <td colSpan={5} className="muted">{labels?.empty || "No products yet"}</td>
               </tr>
             ) : null}
           </tbody>

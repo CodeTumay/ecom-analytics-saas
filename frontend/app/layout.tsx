@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "E-commerce Analytics",
-  description: "Profitability analytics for marketplace exports"
+  title: "JewelPilot",
+  description: "Accessory Retail Copilot for jewelry, accessories, boutique fashion, and lifestyle retail brands"
 };
 
 export default function RootLayout({

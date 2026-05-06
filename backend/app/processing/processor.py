@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 import pandas as pd
@@ -62,7 +64,7 @@ def _read_excel_auto(path: Path) -> pd.DataFrame:
     return max(candidates, key=lambda candidate: candidate[0])[1]
 
 
-def read_marketplace_file(path: str | Path) -> pd.DataFrame:
+def read_retail_file(path: str | Path) -> pd.DataFrame:
     file_path = Path(path)
     if file_path.suffix.lower() == ".csv":
         return _read_csv_auto(file_path)
@@ -75,8 +77,8 @@ def _mapping_report_type(user_mapping: dict[str, str] | None, report_type: str |
     if report_type:
         return report_type
     if user_mapping:
-        return str(user_mapping.get("__report_type") or "profitability")
-    return "profitability"
+        return str(user_mapping.get("__report_type") or "retail_health")
+    return "retail_health"
 
 
 def process_file(
@@ -84,7 +86,7 @@ def process_file(
     user_mapping: dict[str, str] | None = None,
     report_type: str | None = None,
 ) -> dict:
-    df = read_marketplace_file(path)
+    df = read_retail_file(path)
     if df.empty:
         raise ValueError("Uploaded file has no rows")
 

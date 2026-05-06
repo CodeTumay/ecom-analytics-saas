@@ -17,7 +17,7 @@ ALLOWED_EXTENSIONS = {".csv", ".xlsx"}
 @router.post("/upload", response_model=UploadOut, status_code=status.HTTP_202_ACCEPTED)
 def upload_file(
     file: UploadFile = File(...),
-    report_type: str = Form("profitability"),
+    report_type: str = Form("retail_health"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Upload:

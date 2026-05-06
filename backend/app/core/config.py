@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "E-commerce Analytics SaaS"
-    database_url: str = "postgresql+psycopg://analytics:analytics@postgres:5432/ecommerce_analytics"
+    app_name: str = "Accessory Retail Copilot"
+    database_url: str = "postgresql+psycopg://analytics:analytics@postgres:5432/jewelpilot"
     redis_url: str = "redis://redis:6379/0"
     celery_broker_url: str | None = None
     celery_result_backend: str | None = None

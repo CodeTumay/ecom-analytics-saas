@@ -1,19 +1,20 @@
 import pandas as pd
 
 from app.processing.column_mapping import detect_mapping
-from app.processing.processor import read_marketplace_file
-from app.processing.profitability import build_profitability_frame, product_level_profit
+from app.processing.processor import process_file, read_retail_file
+from app.processing.report_analysis import build_report_analysis
 
 
-def test_detects_marketplace_columns() -> None:
+def test_detects_retail_health_columns() -> None:
     df = pd.DataFrame(
         {
             "\u00dcr\u00fcn Ad\u0131": ["A"],
-            "Sat\u0131\u015f": [100],
+            "Koleksiyon": ["Pearl"],
+            "Ma\u011faza": ["Nisantasi"],
+            "Sat\u0131\u015f Adedi": [8],
+            "Ciro": [100],
             "Maliyet": [55],
-            "Komisyon": [10],
-            "Kargo": [5],
-            "Reklam": [8],
+            "Stok": [12],
         }
     )
 
@@ -21,44 +22,59 @@ def test_detects_marketplace_columns() -> None:
 
     assert not result.needs_user_mapping
     assert result.mapping["product_name"] == "\u00dcr\u00fcn Ad\u0131"
-    assert result.mapping["ads_spend"] == "Reklam"
+    assert result.mapping["collection"] == "Koleksiyon"
+    assert result.mapping["store_name"] == "Ma\u011faza"
+    assert result.mapping["stock"] == "Stok"
 
 
-def test_profitability_calculation() -> None:
+def test_retail_health_generates_reorder_and_markdown_actions() -> None:
     df = pd.DataFrame(
         {
-            "Product": ["A", "A", "B"],
-            "Revenue": [100, 50, 40],
-            "Cost": [30, 20, 50],
-            "Commission": [10, 5, 4],
-            "Shipping": [5, 5, 5],
-            "Ads": [15, 5, 0],
+            "Product": ["Pearl Necklace", "Stone Bracelet"],
+            "Collection": ["Pearl", "Natural Stone"],
+            "Revenue": [1200, 120],
+            "Cost": [450, 80],
+            "Units Sold": [60, 1],
+            "Stock": [8, 50],
         }
     )
     mapping = detect_mapping(df).mapping
 
-    orders = build_profitability_frame(df, mapping)
-    products = product_level_profit(orders)
+    analysis = build_report_analysis(df, mapping, "retail_health")
+    actions = {row["product_name"]: row["retail_action"] for row in analysis["detail_rows"]}
 
-    assert orders["net_profit"].tolist() == [40, 15, -19]
-    assert products.iloc[0]["product_name"] == "A"
-    assert products.iloc[-1]["net_profit"] == -19
+    assert analysis["report_type"] == "retail_health"
+    assert actions["Pearl Necklace"] == "Reorder / yeniden uret"
+    assert actions["Stone Bracelet"] == "Markdown veya transfer"
 
 
 def test_reads_semicolon_csv_and_decimal_comma(tmp_path) -> None:
-    csv_path = tmp_path / "marketplace.csv"
+    csv_path = tmp_path / "retail_health.csv"
     csv_path.write_text(
-        "Product;Revenue;Cost;Commission;Shipping;Ads\n"
-        "A;1.234,56;500,10;100,20;25,00;50,00\n"
-        "B;40,00;50,00;5,00;5,00;0,00\n",
+        "Product;Collection;Store;Revenue;Cost;Units Sold;Stock\n"
+        "Pearl Necklace;Pearl;Nisantasi;1.234,56;500,10;24;6\n"
+        "Stone Bracelet;Natural Stone;Kadikoy;40,00;50,00;1;30\n",
         encoding="utf-8",
     )
 
-    df = read_marketplace_file(csv_path)
+    df = read_retail_file(csv_path)
     mapping = detect_mapping(df).mapping
-    orders = build_profitability_frame(df, mapping)
+    analysis = build_report_analysis(df, mapping, "retail_health")
 
-    assert list(df.columns) == ["Product", "Revenue", "Cost", "Commission", "Shipping", "Ads"]
-    assert round(float(orders.iloc[0]["revenue"]), 2) == 1234.56
-    assert round(float(orders.iloc[0]["net_profit"]), 2) == 559.26
-    assert round(float(orders.iloc[1]["net_profit"]), 2) == -20
+    assert list(df.columns) == ["Product", "Collection", "Store", "Revenue", "Cost", "Units Sold", "Stock"]
+    assert round(float(analysis["totals"]["revenue"]), 2) == 1274.56
+    assert round(float(analysis["totals"]["profit"]), 2) == 724.46
+
+
+def test_process_file_defaults_to_retail_health(tmp_path) -> None:
+    csv_path = tmp_path / "upload.csv"
+    csv_path.write_text(
+        "Product,Revenue,Cost,Units Sold,Stock\n"
+        "Pearl Ring,900,320,18,5\n",
+        encoding="utf-8",
+    )
+
+    result = process_file(csv_path)
+
+    assert result["status"] == "completed"
+    assert result["report_type"] == "retail_health"

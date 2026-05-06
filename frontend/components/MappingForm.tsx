@@ -5,12 +5,24 @@ import { Save } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 
 const FIELDS = [
+  "date",
+  "store_name",
+  "store_sqm",
+  "channel",
+  "sku",
   "product_name",
+  "collection",
+  "category",
+  "material",
+  "units_sold",
   "revenue",
   "cost",
-  "commission",
-  "shipping",
-  "ads_spend"
+  "selling_price",
+  "stock",
+  "footfall",
+  "conversion_rate",
+  "sell_through",
+  "inventory_value"
 ];
 
 type MappingAnalysis = {
